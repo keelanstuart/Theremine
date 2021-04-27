@@ -1,0 +1,9 @@
+[submodule "third-party/PowerProps"]
+	path = third-party/PowerProps
+	url = https://github.com/keelanstuart/PowerProps
+[submodule "third-party/Pool"]
+	path = third-party/Pool
+	url = https://github.com/keelanstuart/Pool
+[submodule "third-party/GenIO"]
+	path = third-party/GenIO
+	url = https://github.com/keelanstuart/GenIO
