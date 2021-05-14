@@ -42,7 +42,7 @@ public:
 		InitializeCriticalSection(&m_cs);
 	}
 
-	CSyncVar(const T &init_val)
+	CSyncVar(const T init_val)
 	{
 		m_Val = init_val;
 		InitializeCriticalSection(&m_cs);
@@ -59,7 +59,7 @@ public:
 		return m_Val;
 	}
 
-	void Set(T &val)
+	void Set(T val)
 	{
 		CAutolock lock(&m_cs);
 		m_Val = val;
@@ -79,6 +79,49 @@ public:
 protected:
 	T m_Val;
 	CRITICAL_SECTION m_cs;
+};
+
+template <typename T> class CBoundedSyncVar : public CSyncVar<T>
+{
+public:
+	CBoundedSyncVar() : CSyncVar<T>()
+	{
+	}
+
+	CBoundedSyncVar(const T &init_val, const T &init_min, const T &init_max) : CSyncVar<T>(init_val)
+	{
+		m_MinVal = init_min;
+		m_MaxVal = init_max;
+	}
+
+	virtual ~CBoundedSyncVar() { }
+
+	T &GetMin()
+	{
+		CAutolock lock(&m_cs);
+		return m_MinVal;
+	}
+
+	void SetMin(T &minval)
+	{
+		CAutolock lock(&m_cs);
+		m_MinVal = minval;
+	}
+
+	T &GetMax()
+	{
+		CAutolock lock(&m_cs);
+		return m_MinVax;
+	}
+
+	void SetMax(T &maxval)
+	{
+		CAutolock lock(&m_cs);
+		m_MaxVal = maxval;
+	}
+
+protected:
+	T m_MinVal, m_MaxVal;
 };
 
 // CTheremineApp:
@@ -120,6 +163,7 @@ public:
 
 	int m_iSampleRate;
 	CSyncVar<COscillator *> m_pOscillator;
+	CSyncVar<bool> m_Enabled;
 
 	props::IProperty *prop_osctype;
 	props::IProperty *prop_freqmin;
@@ -128,6 +172,28 @@ public:
 
 	CSyncVar<float> m_curVolume;
 	CSyncVar<float> m_curFrequency;
+
+	typedef enum
+	{
+		R_PALM_NPOS = 0,	// Normalized Position of the Right Palm
+		R_PALM_DDOWN,		// Dot product of [DOWN] and the Right Palm normal
+
+		L_PALM_NPOS,		// Normalized Position of the Left Palm
+		L_PALM_DDOWN,		// Dot product of [DOWN] and the Left Palm normal
+
+		NUMVALS
+	} INPUT_TYPE;
+
+	typedef enum
+	{
+		FREQUENCY = 0,
+		VOLUME,
+
+		NUMTYPES
+	} MODULATOR_TYPE;
+
+	// Control Values for HAND_TARGET items, all in the range of [0..1]
+	CSyncVar<float> m_ControlValue[INPUT_TYPE::NUMVALS];
 
 	LARGE_INTEGER m_Frequency;
 

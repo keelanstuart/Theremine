@@ -14,7 +14,7 @@ static char THIS_FILE[] = __FILE__;
 
 // CAnimListCtrl
 
-#define ANIM_ITEM_HEIGHT		100
+#define ANIM_ITEM_HEIGHT		40
 
 IMPLEMENT_DYNAMIC(CAnimListCtrl, CListCtrl)
 
@@ -75,6 +75,19 @@ void MyAppendMenuItem(HMENU menu, UINT32 type, const TCHAR *text, BOOL enabled, 
 	InsertMenuItem(menu, GetMenuItemCount(menu), true, &mii);
 }
 
+bool CAnimListCtrl::AddItem(CTheremineApp::MODULATOR_TYPE modulator_type, CTheremineApp::INPUT_TYPE input_type)
+{
+	const TCHAR *mod_name[CTheremineApp::MODULATOR_TYPE::NUMTYPES] = {_T("Frequency"), _T("Volume")};
+
+	const TCHAR *s = mod_name[modulator_type];
+	int ic = GetItemCount();
+
+	int ii = InsertItem(ic, s);
+
+	SetItemData(ii, (DWORD_PTR)(input_type));
+
+	return true;
+}
 
 void CAnimListCtrl::MeasureItem(LPMEASUREITEMSTRUCT pmi)
 {
@@ -88,7 +101,7 @@ void CAnimListCtrl::MeasureItem(LPMEASUREITEMSTRUCT pmi)
 BOOL CAnimListCtrl::PreCreateWindow(CREATESTRUCT& cs)
 {
 	cs.style |= LVS_OWNERDRAWFIXED | LVS_NOCOLUMNHEADER | LVS_REPORT;
-	cs.dwExStyle |= LVS_EX_FULLROWSELECT | LVS_EX_TRACKSELECT;// | LVS_EX_ONECLICKACTIVATE;
+	//cs.dwExStyle |= LVS_EX_FULLROWSELECT | LVS_EX_TRACKSELECT;// | LVS_EX_ONECLICKACTIVATE;
 
 	return CListCtrl::PreCreateWindow(cs);
 }
@@ -107,19 +120,12 @@ void CAnimListCtrl::OnSize(UINT nType, int cx, int cy)
 {
 	CListCtrl::OnSize(nType, cx, cy);
 
-	int vsw = 0;
-
-	if (cy < (GetItemCount() * ANIM_ITEM_HEIGHT))
-	{
-		//vsw = GetSystemMetrics(SM_CXVSCROLL);
-	}
-
-	SetColumnWidth(1, cx - GetColumnWidth(0) - vsw);
+	int bw = ((cx - GetColumnWidth(0)) / 2) - 2;
+	
+	SetColumnWidth(1, bw);
+	SetColumnWidth(2, bw);
 
 	RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_NOERASE | RDW_UPDATENOW);
-	RedrawItems(0, GetItemCount());
-	//((CReactorDocView *)GetParent())->RedrawActiveTimeline();
-	//Invalidate(FALSE);
 }
 
 #if defined(UNICODE)
@@ -142,39 +148,48 @@ void CAnimListCtrl::DrawItem(LPDRAWITEMSTRUCT pdi)
 	Gdiplus::LinearGradientBrush br_scmd(Gdiplus::Rect(0, 0, th, th), Gdiplus::Color(255, 128, 128, 100), Gdiplus::Color(255, 32, 32, 10), Gdiplus::LinearGradientMode::LinearGradientModeVertical);
 	Gdiplus::Pen pn_acc(&br_acc, 1);
 
-	CRect ritem = pdi->rcItem, rcol[2], rcli;
+	CRect ritem = pdi->rcItem, rcol[3], rcli;
 
 	GetClientRect(rcli);
 	GetSubItemRect(pdi->itemID, 0, LVIR_BOUNDS, rcol[0]);
 	GetSubItemRect(pdi->itemID, 1, LVIR_BOUNDS, rcol[1]);
+	GetSubItemRect(pdi->itemID, 2, LVIR_BOUNDS, rcol[2]);
 
-//	if (!(pdi->itemID & 1))
-//		gr.FillRectangle(&br_bg, ritem.left, ritem.top, ritem.Width(), ritem.Height());
+	if (!(pdi->itemID & 1))
+		gr.FillRectangle(&br_bg, ritem.left, ritem.top, ritem.Width(), ritem.Height());
+
+	Gdiplus::RectF tnr;
 
 	Gdiplus::Font f_list(pdi->hDC);// , Gdiplus::FontFamily(_T("Arial")), 12);
-	CString name = GetItemText(pdi->itemID, 0);
-	Gdiplus::RectF tnr;
-	gr.MeasureString((LPCTSTR)name, name.GetLength(), &f_list, Gdiplus::PointF(0.0, 0.0), &tnr);
-	gr.DrawString(name, name.GetLength(), &f_list, Gdiplus::PointF(10.0, (Gdiplus::REAL)(ritem.CenterPoint().y - (tnr.Height / 2.0))), &br_text);
 
-	LOGFONT lf_cmd;
-	f_list.GetLogFont(&gr, &lf_cmd);
-	lf_cmd.lfWeight = FW_EXTRALIGHT;
-	lf_cmd.lfHeight--;
-	lf_cmd.lfItalic = FALSE;// TRUE;
-	Gdiplus::Font f_cmd(pdi->hDC, &lf_cmd);
+	CString effect_name = GetItemText(pdi->itemID, 0);
+	gr.MeasureString((LPCTSTR)effect_name, effect_name.GetLength(), &f_list, Gdiplus::PointF(0.0, 0.0), &tnr);
+	gr.DrawString(effect_name, effect_name.GetLength(), &f_list, Gdiplus::PointF((Gdiplus::REAL)rcol[1].left + 10.0f, (Gdiplus::REAL)(ritem.CenterPoint().y - (tnr.Height / 2.0))), &br_text);
 
-	Gdiplus::Point p1(rcol[1].left, ritem.CenterPoint().y);
-	Gdiplus::Point p2(rcol[1].right, p1.Y);
+	const TCHAR *inp_names[CTheremineApp::INPUT_TYPE::NUMVALS] = {_T("Right-Hand Position"), _T("Right Palm Direction"), _T("Left-Hand Position"), _T("Left Palm Direction")};
+	CString inp_name = inp_names[pdi->itemData];
+	gr.MeasureString((LPCTSTR)inp_name, inp_name.GetLength(), &f_list, Gdiplus::PointF(0.0f, 0.0f), &tnr);
+	gr.DrawString(inp_name, inp_name.GetLength(), &f_list, Gdiplus::PointF((Gdiplus::REAL)rcol[2].left + 10.0f, (Gdiplus::REAL)(ritem.CenterPoint().y - (tnr.Height / 2.0))), &br_text);
 
-	gr.DrawLine(&pn_acc, p1, p2);
+	rcol[0].right = rcol[1].left - 1;
+	gr.SetClip(Gdiplus::Rect(rcol[0].left, rcol[0].top, rcol[0].Width(), rcol[0].Height()));
 
-	gr.SetClip(Gdiplus::Rect(rcol[1].left, rcol[1].top, rcol[1].Width(), rcol[1].Height()));
+	rcol[0].DeflateRect(10, 12, 4, 12);
+	Gdiplus::SolidBrush br_r(Gdiplus::Color(255, 0, 0, 0));
+	Gdiplus::Pen pn_r(Gdiplus::Color(255, 255, 255, 255));
+	gr.DrawRectangle(&pn_r, rcol[0].left, rcol[0].top, rcol[0].Width(), rcol[0].Height());
 
-	Gdiplus::LinearGradientBrush br_cmd(Gdiplus::Rect(0, 0, rcol[1].Width(), rcol[1].Height()), Gdiplus::Color(255, 0, 0, 100), Gdiplus::Color(255, 100, 200, 255), Gdiplus::LinearGradientMode::LinearGradientModeHorizontal);
+	rcol[0].DeflateRect(1, 1, 1, 1);
+	gr.FillRectangle(&br_r, rcol[0].left, rcol[0].top, rcol[0].Width(), rcol[0].Height());
 
-//	gr.FillRectangle(&br_cmd, rcol[1]);
+	if (theApp.m_Enabled.Get())
+	{
+		Gdiplus::LinearGradientBrush br_bar(Gdiplus::Rect(0, 0, rcol[1].left, 1), Gdiplus::Color(255, 255, 64, 128), Gdiplus::Color(255, 64, 255, 128), Gdiplus::LinearGradientMode::LinearGradientModeHorizontal);
 
+		rcol[0].DeflateRect(1, 1, 1, 0);
+		INT w = (INT)((float)rcol[0].Width() * theApp.m_ControlValue[pdi->itemData].Get());
+		gr.FillRectangle(&br_bar, rcol[0].left, rcol[0].top, w, rcol[0].Height());
+	}
 }
 
 

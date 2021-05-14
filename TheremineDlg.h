@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PropertyGrid.h"
-#include "MeterCtl.h"
+#include "AnimListCtrl.h"
 
 
 // CTheremineDlg dialog
@@ -11,11 +11,6 @@ class CTheremineDlg : public CDialogEx
 public:
 	CTheremineDlg(CWnd* pParent = nullptr);	// standard constructor
 	virtual ~CTheremineDlg();
-
-	enum {
-		IDC_VOLBAR = 500,
-		IDC_FREQBAR,
-	};
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
@@ -34,8 +29,7 @@ protected:
 	HICON m_hIcon;
 
 	CPropertyGrid m_PropList;
-	CMeterCtl m_FreqBar;
-	CMeterCtl m_VolBar;
+	CAnimListCtrl m_EffectList;
 
 	CDSStreamPlay *m_pStream;
 

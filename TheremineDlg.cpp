@@ -24,14 +24,22 @@ BOOL WINAPI CTheremineDlg::AudioCallback(PBYTE pBuffer, DWORD dwAmountRequested,
 	CTheremineDlg *_this = (CTheremineDlg *)InstanceData;
 
 	COscillator **posc = theApp.m_pOscillator.Lock();
-	if (posc && *posc)
+	if (posc && *posc && theApp.m_Enabled.Get())
 	{
 		int nSamples = dwAmountRequested / sizeof(int16_t);
 
-		float freq = theApp.m_curFrequency.Get();
+		float freq_mul = theApp.m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_NPOS].Get();
+
+		float steps = (float)(std::max<int64_t>(2, theApp.prop_freqsteps->AsInt() - 1));
+
+		float freq_range = theApp.prop_freqmax->AsFloat() - theApp.prop_freqmin->AsFloat();
+
+		float pos_steps = floor(freq_mul * steps);
+
+		float freq = (pos_steps * freq_range / steps) + theApp.prop_freqmin->AsFloat();
 		(*posc)->SetFrequency(freq);
 
-		float vol = theApp.m_curVolume.Get();
+		float vol = theApp.m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_DDOWN].Get();
 		(*posc)->SetAmplitude(vol);
 
 		(*posc)->Generate((int16_t *)pBuffer, nSamples);
@@ -99,6 +107,7 @@ BOOL CTheremineDlg::OnInitDialog()
  	ScreenToClient(rpl);
 	m_PropList.AdjustLayout();
 
+#if 0
 	int m = rc.right - rpl.right;
 	CRect rb(m, m, rpl.left - m, rpl.bottom);
 
@@ -114,6 +123,23 @@ BOOL CTheremineDlg::OnInitDialog()
 
 	m_pDynamicLayout->AddItem(m_VolBar.GetSafeHwnd(), CMFCDynamicLayout::MoveNone(), CMFCDynamicLayout::SizeVertical(100));
 	m_pDynamicLayout->AddItem(m_FreqBar.GetSafeHwnd(), CMFCDynamicLayout::MoveNone(), CMFCDynamicLayout::SizeVertical(100));
+#else
+	CRect rb(rpl.left, rpl.bottom + rpl.top, rpl.right, rc.bottom - rpl.top);
+	m_EffectList.Create(WS_CHILD | WS_VISIBLE, rb, this, IDC_EFFECTLIST);
+
+	m_pDynamicLayout->AddItem(m_EffectList.GetSafeHwnd(), CMFCDynamicLayout::MoveVertical(100), CMFCDynamicLayout::SizeHorizontal(100));
+
+	m_EffectList.SetExtendedStyle(LVS_EX_DOUBLEBUFFER);
+	m_EffectList.SetView(LV_VIEW_DETAILS);
+	m_EffectList.SetBkColor(RGB(40, 40, 40));
+
+	m_EffectList.InsertColumn(0, _T("Value"), LVCFMT_LEFT, 100);
+	m_EffectList.InsertColumn(1, _T("Modulator"), LVCFMT_LEFT, 100);
+	m_EffectList.InsertColumn(2, _T("Input"), LVCFMT_LEFT, 100);
+
+	m_EffectList.AddItem(CTheremineApp::MODULATOR_TYPE::FREQUENCY, CTheremineApp::INPUT_TYPE::R_PALM_NPOS);
+	m_EffectList.AddItem(CTheremineApp::MODULATOR_TYPE::VOLUME, CTheremineApp::INPUT_TYPE::R_PALM_DDOWN);
+#endif
 
 	SetTimer('PING', 10, nullptr);
 
@@ -184,15 +210,7 @@ void CTheremineDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	if (nIDEvent == 'PING')
 	{
-		float frmin = theApp.prop_freqmin->AsFloat();
-		float frmax = theApp.prop_freqmax->AsFloat();
-		float fr = theApp.m_curFrequency.Get();
-		float vol = theApp.m_curVolume.Get();
-
-		m_FreqBar.SetLimits((int)frmin, (int)frmax, false);
-		m_FreqBar.SetValue((int)fr, true);
-
-		m_VolBar.SetValue((int)(vol * 100.0f), true);
+		m_EffectList.RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_NOERASE | RDW_UPDATENOW);
 	}
 
 	CDialogEx::OnTimer(nIDEvent);

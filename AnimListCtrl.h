@@ -8,6 +8,8 @@ public:
 	CAnimListCtrl();
 	virtual ~CAnimListCtrl();
 
+	bool AddItem(CTheremineApp::MODULATOR_TYPE modulator_type, CTheremineApp::INPUT_TYPE input_type);
+
 protected:
 
 

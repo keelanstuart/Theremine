@@ -26,8 +26,14 @@ int operator < (const LEAP_DEVICE_REF &a, const LEAP_DEVICE_REF &b)
 
 // CTheremineApp construction
 
-CTheremineApp::CTheremineApp() : m_curFrequency(50.0f), m_curVolume(0.0f), m_pOscillator(nullptr)
+CTheremineApp::CTheremineApp() : 
+	m_pOscillator(nullptr), m_Enabled(false)
 {
+	m_ControlValue[CTheremineApp::INPUT_TYPE::L_PALM_NPOS].Set(0.0f);
+	m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_NPOS].Set(0.0f);
+	m_ControlValue[CTheremineApp::INPUT_TYPE::L_PALM_DDOWN].Set(0.0f);
+	m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_DDOWN].Set(0.0f);
+
 	m_pProps = nullptr;
 	m_pLeapPool = nullptr;
 	m_LeapConn = nullptr;
@@ -61,6 +67,54 @@ CTheremineApp::~CTheremineApp()
 	}
 }
 
+
+const LEAP_HAND *FindFirstHand(const LEAP_TRACKING_EVENT *evt, eLeapHandType ht)
+{
+	if (!evt || !evt->nHands)
+		return nullptr;
+
+	for (uint32_t i = 0; i < evt->nHands; i++)
+	{
+		if (evt->pHands[i].type == ht)
+			return &(evt->pHands[i]);
+	}
+
+	return nullptr;
+}
+
+#define LEAP_MINDIST	80.0f
+#define LEAP_MAXDIST	400.0f
+#define LEAP_DISTRANGE	(LEAP_MAXDIST - LEAP_MINDIST)
+
+float PalmNormal(const LEAP_HAND *phand)
+{
+	static vec3 down(0.0f, -1.0f, 0.0f);
+
+	if (!phand)
+		return 0.0f;
+
+	vec3 palmnorm(phand->palm.normal.x, phand->palm.normal.y, phand->palm.normal.z);
+	float d = palmnorm.dot(down);
+	d = std::min<float>(std::max<float>(0.0f, d), 1.0f);
+
+	return d;
+}
+
+float PalmNormDistance(const LEAP_HAND *phand)
+{
+	if (!phand)
+		return -1.0f;
+
+	float p = sqrtf(
+		(phand->palm.position.x * phand->palm.position.x) +
+		(phand->palm.position.y * phand->palm.position.y) +
+		(phand->palm.position.z * phand->palm.position.z));
+
+	p = std::min<float>(std::max<float>(LEAP_MINDIST, p), LEAP_MAXDIST) - LEAP_MINDIST;
+	p /= LEAP_DISTRANGE;
+
+	return p;
+}
 
 pool::IThreadPool::TASK_RETURN __cdecl PollLeapTask(void *param0, void *param1, size_t task_number)
 {
@@ -146,66 +200,33 @@ pool::IThreadPool::TASK_RETURN __cdecl PollLeapTask(void *param0, void *param1, 
 		{
 			const LEAP_TRACKING_EVENT *trkevt = msg.tracking_event;
 
-			float p = _this->m_curFrequency.Get(), v = _this->m_curVolume.Get();
-
-			switch (trkevt->nHands)
+			bool b = (trkevt->nHands > 0);
+			if (b)
 			{
-				case 0:
-				{
-					v *= 0.8f;
-					p = std::max<float>(p * 0.8f, _this->prop_freqmin->AsFloat());
-					break;
-				}
-				case 1:
-				{
-					static vec3 down(0.0f, -1.0f, 0.0f);
+				const LEAP_HAND* phand = nullptr;
 
-					vec3 palmnorm(trkevt->pHands[0].palm.normal.x, trkevt->pHands[0].palm.normal.y, trkevt->pHands[0].palm.normal.z);
-					v = palmnorm.dot(down);
-					break;
-				}
-				case 2:
+				phand = FindFirstHand(trkevt, eLeapHandType_Right);
+				if (phand)
 				{
-					break;
+					float d = PalmNormal(phand);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_DDOWN].Set(d);
+
+					float p = PalmNormDistance(phand);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_NPOS].Set(p);
 				}
 
-				default:
-					break;
+				phand = FindFirstHand(trkevt, eLeapHandType_Left);
+				if (phand)
+				{
+					float d = PalmNormal(phand);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_PALM_DDOWN].Set(d);
+
+					float p = PalmNormDistance(phand);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_PALM_NPOS].Set(p);
+				}
 			}
 
-			v = std::min<float>(std::max<float>(0.0f, v), 1.0f);
-			_this->m_curVolume.Set(v);
-
-			if (trkevt->nHands)
-			{
-				p = sqrtf(
-					(trkevt->pHands[0].palm.position.x * trkevt->pHands[0].palm.position.x) +
-					(trkevt->pHands[0].palm.position.y * trkevt->pHands[0].palm.position.y) +
-					(trkevt->pHands[0].palm.position.z * trkevt->pHands[0].palm.position.z));
-
-#define LEAP_MINDIST	80.0f
-#define LEAP_MAXDIST	400.0f
-
-				float steps = (float)(std::max<int64_t>(1, _this->prop_freqsteps->AsInt() - 1));
-
-				// step distance across entire range
-				float ds = (LEAP_MAXDIST - LEAP_MINDIST) / steps;
-
-				// clamped range
-				float pos_clamped_range = std::min<float>(std::max<float>(LEAP_MINDIST, p), LEAP_MAXDIST) - LEAP_MINDIST;
-
-				float pos_steps = floor(pos_clamped_range / ds);
-
-				float freq_range = _this->prop_freqmax->AsFloat() - _this->prop_freqmin->AsFloat();
-
-				float freq_stepsize = freq_range / steps;
-
-				p = (pos_steps * freq_stepsize) + _this->prop_freqmin->AsFloat();
-
-			}
-
-			_this->m_curFrequency.Set(p);
-
+			_this->m_Enabled.Set(b);
 			break;
 		}
 

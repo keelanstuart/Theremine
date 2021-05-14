@@ -1,0 +1,103 @@
+<sfxpackager>
+
+<settings2>
+
+<powerprops:property_set>
+<powerprops:property id="ADCH" type="BOOLEAN">yes</powerprops:property>
+<powerprops:property id="ADMN" type="BOOLEAN">no</powerprops:property>
+<powerprops:property id="BOOT" type="BOOLEAN">no</powerprops:property>
+<powerprops:property id="CBSZ" type="ENUM">Default,Smallest,Smaller,Small,Normal,Large,Larger,Largest:0</powerprops:property>
+<powerprops:property id="CPTN" type="STRING">Theremine Setup</powerprops:property>
+<powerprops:property id="DDST" type="STRING">%USERPROFILE%\Desktop\Theremine</powerprops:property>
+<powerprops:property id="ENEX" type="BOOLEAN">no</powerprops:property>
+<powerprops:property id="ICON" type="STRING"></powerprops:property>
+<powerprops:property id="IMAG" type="STRING">Theremine_Install2.bmp</powerprops:property>
+<powerprops:property id="LICM" type="STRING"></powerprops:property>
+<powerprops:property id="LNCH" type="STRING">Theremine64.exe</powerprops:property>
+<powerprops:property id="MXSZ" type="INT">-1</powerprops:property>
+<powerprops:property id="OFSF" type="ENUM">None,Build Date,Version:1</powerprops:property>
+<powerprops:property id="OPMD" type="ENUM">Self-Extracting Executable,Executable With External Data:0</powerprops:property>
+<powerprops:property id="OUTP" type="STRING">Theremine.exe</powerprops:property>
+<powerprops:property id="VCPY" type="STRING">Copyright (c) 2021, Keelan Stuart</powerprops:property>
+<powerprops:property id="VDSC" type="STRING"></powerprops:property>
+<powerprops:property id="VERS" type="STRING"></powerprops:property>
+<powerprops:property id="VPRD" type="STRING">Theremine Setup</powerprops:property>
+<powerprops:property id="WLCM" type="STRING">Theremine_Install.html</powerprops:property>
+</powerprops:property_set>
+
+</settings2>
+
+<files2>
+
+<file2>
+
+<powerprops:property_set>
+<powerprops:property id="DSTP" type="STRING">\</powerprops:property>
+<powerprops:property id="EXCL" type="STRING"></powerprops:property>
+<powerprops:property id="NAME" type="STRING">LeapC.dll</powerprops:property>
+<powerprops:property id="PRES" type="STRING"></powerprops:property>
+<powerprops:property id="SNPT" type="STRING"></powerprops:property>
+<powerprops:property id="SRCP" type="STRING">D:\proj\Theremine\bin\LeapC.dll</powerprops:property>
+</powerprops:property_set>
+
+</file2>
+
+<file2>
+
+<powerprops:property_set>
+<powerprops:property id="DSTP" type="STRING">\</powerprops:property>
+<powerprops:property id="EXCL" type="STRING"></powerprops:property>
+<powerprops:property id="NAME" type="STRING">Pool64.dll</powerprops:property>
+<powerprops:property id="PRES" type="STRING"></powerprops:property>
+<powerprops:property id="SNPT" type="STRING"></powerprops:property>
+<powerprops:property id="SRCP" type="STRING">D:\proj\Theremine\bin\Pool64.dll</powerprops:property>
+</powerprops:property_set>
+
+</file2>
+
+<file2>
+
+<powerprops:property_set>
+<powerprops:property id="DSTP" type="STRING">\</powerprops:property>
+<powerprops:property id="EXCL" type="STRING"></powerprops:property>
+<powerprops:property id="NAME" type="STRING">PowerProps64.dll</powerprops:property>
+<powerprops:property id="PRES" type="STRING"></powerprops:property>
+<powerprops:property id="SNPT" type="STRING"></powerprops:property>
+<powerprops:property id="SRCP" type="STRING">D:\proj\Theremine\bin\PowerProps64.dll</powerprops:property>
+</powerprops:property_set>
+
+</file2>
+
+<file2>
+
+<powerprops:property_set>
+<powerprops:property id="DSTP" type="STRING">\</powerprops:property>
+<powerprops:property id="EXCL" type="STRING"></powerprops:property>
+<powerprops:property id="NAME" type="STRING">Theremine64.exe</powerprops:property>
+<powerprops:property id="PRES" type="STRING"></powerprops:property>
+<powerprops:property id="SNPT" type="STRING"></powerprops:property>
+<powerprops:property id="SRCP" type="STRING">D:\proj\Theremine\bin\Theremine64.exe</powerprops:property>
+</powerprops:property_set>
+
+</file2>
+
+<file2>
+
+<powerprops:property_set>
+<powerprops:property id="DSTP" type="STRING">\</powerprops:property>
+<powerprops:property id="EXCL" type="STRING"></powerprops:property>
+<powerprops:property id="NAME" type="STRING">GenIO64.dll</powerprops:property>
+<powerprops:property id="PRES" type="STRING"></powerprops:property>
+<powerprops:property id="SNPT" type="STRING"></powerprops:property>
+<powerprops:property id="SRCP" type="STRING">D:\proj\Theremine\bin\GenIO64.dll</powerprops:property>
+</powerprops:property_set>
+
+</file2>
+
+</files2>
+
+<scripts>
+
+</scripts>
+
+</sfxpackager>
