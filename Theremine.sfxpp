@@ -11,7 +11,7 @@
 <powerprops:property id="DDST" type="STRING">%USERPROFILE%\Desktop\Theremine</powerprops:property>
 <powerprops:property id="ENEX" type="BOOLEAN">no</powerprops:property>
 <powerprops:property id="ICON" type="STRING"></powerprops:property>
-<powerprops:property id="IMAG" type="STRING">Theremine_Install2.bmp</powerprops:property>
+<powerprops:property id="IMAG" type="STRING">Theremine_Install.bmp</powerprops:property>
 <powerprops:property id="LICM" type="STRING"></powerprops:property>
 <powerprops:property id="LNCH" type="STRING">Theremine64.exe</powerprops:property>
 <powerprops:property id="MXSZ" type="INT">-1</powerprops:property>
