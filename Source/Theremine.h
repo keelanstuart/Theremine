@@ -170,30 +170,39 @@ public:
 	props::IProperty *prop_freqmax;
 	props::IProperty *prop_freqsteps;
 
-	CSyncVar<float> m_curVolume;
-	CSyncVar<float> m_curFrequency;
-
 	typedef enum
 	{
 		R_PALM_NPOS = 0,	// Normalized Position of the Right Palm
 		R_PALM_DDOWN,		// Dot product of [DOWN] and the Right Palm normal
+		R_FIST_TIGHTNESS,	// Tightness of the right fist
 
 		L_PALM_NPOS,		// Normalized Position of the Left Palm
 		L_PALM_DDOWN,		// Dot product of [DOWN] and the Left Palm normal
+		L_FIST_TIGHTNESS,	// Tightness of the left fist
 
-		NUMVALS
+		NUM_INPUTS
 	} INPUT_TYPE;
+
+	const TCHAR *GetInputName(INPUT_TYPE it);
 
 	typedef enum
 	{
 		FREQUENCY = 0,
 		VOLUME,
+		DISTORTION,
+		REVERB,
 
-		NUMTYPES
-	} MODULATOR_TYPE;
+		NUM_EFFECTS
+	} EFFECT_TYPE;
+
+	const TCHAR *GetEffectName(EFFECT_TYPE et);
 
 	// Control Values for HAND_TARGET items, all in the range of [0..1]
-	CSyncVar<float> m_ControlValue[INPUT_TYPE::NUMVALS];
+	CSyncVar<float> m_ControlValue[INPUT_TYPE::NUM_INPUTS];
+
+	typedef std::map<EFFECT_TYPE, INPUT_TYPE> TEffectInputMap;
+	TEffectInputMap m_EffectMap;
+
 
 	LARGE_INTEGER m_Frequency;
 

@@ -75,16 +75,14 @@ void MyAppendMenuItem(HMENU menu, UINT32 type, const TCHAR *text, BOOL enabled, 
 	InsertMenuItem(menu, GetMenuItemCount(menu), true, &mii);
 }
 
-bool CAnimListCtrl::AddItem(CTheremineApp::MODULATOR_TYPE modulator_type, CTheremineApp::INPUT_TYPE input_type)
+bool CAnimListCtrl::AddItem(CTheremineApp::EFFECT_TYPE effect_type, CTheremineApp::INPUT_TYPE input_type)
 {
-	const TCHAR *mod_name[CTheremineApp::MODULATOR_TYPE::NUMTYPES] = {_T("Frequency"), _T("Volume")};
-
-	const TCHAR *s = mod_name[modulator_type];
+	const TCHAR *s = _T("");
 	int ic = GetItemCount();
 
 	int ii = InsertItem(ic, s);
 
-	SetItemData(ii, (DWORD_PTR)(input_type));
+	SetItemData(ii, (DWORD_PTR)(effect_type));
 
 	return true;
 }
@@ -142,7 +140,7 @@ void CAnimListCtrl::DrawItem(LPDRAWITEMSTRUCT pdi)
 
 	Gdiplus::Graphics gr(*pdc);
 
-	Gdiplus::SolidBrush br_bg(Gdiplus::Color(255, 45, 45, 45));
+	Gdiplus::SolidBrush br_bg(Gdiplus::Color(255, 75, 75, 75));
 	Gdiplus::SolidBrush br_text(Gdiplus::Color(255, 255, 255, 255));
 	Gdiplus::SolidBrush br_acc(Gdiplus::Color(255, 16, 16, 16));
 	Gdiplus::LinearGradientBrush br_scmd(Gdiplus::Rect(0, 0, th, th), Gdiplus::Color(255, 128, 128, 100), Gdiplus::Color(255, 32, 32, 10), Gdiplus::LinearGradientMode::LinearGradientModeVertical);
@@ -156,20 +154,20 @@ void CAnimListCtrl::DrawItem(LPDRAWITEMSTRUCT pdi)
 	GetSubItemRect(pdi->itemID, 2, LVIR_BOUNDS, rcol[2]);
 
 	if (!(pdi->itemID & 1))
-		gr.FillRectangle(&br_bg, ritem.left, ritem.top, ritem.Width(), ritem.Height());
+		gr.FillRectangle(&br_bg, ritem.left, ritem.top, rcli.Width(), ritem.Height());
 
 	Gdiplus::RectF tnr;
 
 	Gdiplus::Font f_list(pdi->hDC);// , Gdiplus::FontFamily(_T("Arial")), 12);
 
-	CString effect_name = GetItemText(pdi->itemID, 0);
+	CString effect_name = theApp.GetEffectName((CTheremineApp::EFFECT_TYPE)pdi->itemData);
 	gr.MeasureString((LPCTSTR)effect_name, effect_name.GetLength(), &f_list, Gdiplus::PointF(0.0, 0.0), &tnr);
 	gr.DrawString(effect_name, effect_name.GetLength(), &f_list, Gdiplus::PointF((Gdiplus::REAL)rcol[1].left + 10.0f, (Gdiplus::REAL)(ritem.CenterPoint().y - (tnr.Height / 2.0))), &br_text);
 
-	const TCHAR *inp_names[CTheremineApp::INPUT_TYPE::NUMVALS] = {_T("Right-Hand Position"), _T("Right Palm Direction"), _T("Left-Hand Position"), _T("Left Palm Direction")};
-	CString inp_name = inp_names[pdi->itemData];
-	gr.MeasureString((LPCTSTR)inp_name, inp_name.GetLength(), &f_list, Gdiplus::PointF(0.0f, 0.0f), &tnr);
-	gr.DrawString(inp_name, inp_name.GetLength(), &f_list, Gdiplus::PointF((Gdiplus::REAL)rcol[2].left + 10.0f, (Gdiplus::REAL)(ritem.CenterPoint().y - (tnr.Height / 2.0))), &br_text);
+	CTheremineApp::TEffectInputMap::const_iterator it = theApp.m_EffectMap.find((CTheremineApp::EFFECT_TYPE)pdi->itemData);
+	CString input_name = theApp.GetInputName(it->second);
+	gr.MeasureString((LPCTSTR)input_name, input_name.GetLength(), &f_list, Gdiplus::PointF(0.0f, 0.0f), &tnr);
+	gr.DrawString(input_name, input_name.GetLength(), &f_list, Gdiplus::PointF((Gdiplus::REAL)rcol[2].left + 10.0f, (Gdiplus::REAL)(ritem.CenterPoint().y - (tnr.Height / 2.0))), &br_text);
 
 	rcol[0].right = rcol[1].left - 1;
 	gr.SetClip(Gdiplus::Rect(rcol[0].left, rcol[0].top, rcol[0].Width(), rcol[0].Height()));
@@ -187,7 +185,7 @@ void CAnimListCtrl::DrawItem(LPDRAWITEMSTRUCT pdi)
 		Gdiplus::LinearGradientBrush br_bar(Gdiplus::Rect(0, 0, rcol[1].left, 1), Gdiplus::Color(255, 255, 64, 128), Gdiplus::Color(255, 64, 255, 128), Gdiplus::LinearGradientMode::LinearGradientModeHorizontal);
 
 		rcol[0].DeflateRect(1, 1, 1, 0);
-		INT w = (INT)((float)rcol[0].Width() * theApp.m_ControlValue[pdi->itemData].Get());
+		INT w = (INT)((float)rcol[0].Width() * theApp.m_ControlValue[it->second].Get());
 		gr.FillRectangle(&br_bar, rcol[0].left, rcol[0].top, w, rcol[0].Height());
 	}
 }

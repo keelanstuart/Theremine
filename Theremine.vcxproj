@@ -245,65 +245,65 @@
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="AnimListCtrl.h" />
-    <ClInclude Include="DSStreamPlay.h" />
-    <ClInclude Include="framework.h" />
-    <ClInclude Include="MeterCtl.h" />
-    <ClInclude Include="Oscillator.h" />
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="PropertyGrid.h" />
-    <ClInclude Include="Resource.h" />
-    <ClInclude Include="SawtoothWave.h" />
-    <ClInclude Include="SineWave.h" />
-    <ClInclude Include="SquareWave.h" />
-    <ClInclude Include="targetver.h" />
-    <ClInclude Include="Theremine.h" />
-    <ClInclude Include="TheremineDlg.h" />
-    <ClInclude Include="TriangleWave.h" />
-    <ClInclude Include="vec3.h" />
-    <ClInclude Include="wtfcolorbar.h" />
-    <ClInclude Include="wtfcolorbutton.h" />
-    <ClInclude Include="wtfcolormenubutton.h" />
-    <ClInclude Include="wtfcolorpopupmenu.h" />
-    <ClInclude Include="wtfpropertygridctrl.h" />
-    <ClInclude Include="wtfpropertygridtooltipctrl.h" />
-    <ClInclude Include="wtfvslistbox.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="AnimListCtrl.cpp" />
-    <ClCompile Include="DSStreamPlay.cpp" />
-    <ClCompile Include="MeterCtl.cpp" />
-    <ClCompile Include="Oscillator.cpp" />
-    <ClCompile Include="pch.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="PropertyGrid.cpp" />
-    <ClCompile Include="SawtoothWave.cpp" />
-    <ClCompile Include="SineWave.cpp" />
-    <ClCompile Include="SquareWave.cpp" />
-    <ClCompile Include="Theremine.cpp" />
-    <ClCompile Include="TheremineDlg.cpp" />
-    <ClCompile Include="TriangleWave.cpp" />
-    <ClCompile Include="vec3.cpp" />
-    <ClCompile Include="wtfcolorbar.cpp" />
-    <ClCompile Include="wtfcolorbutton.cpp" />
-    <ClCompile Include="wtfcolormenubutton.cpp" />
-    <ClCompile Include="wtfcolorpopupmenu.cpp" />
-    <ClCompile Include="wtfpropertygridctrl.cpp" />
-    <ClCompile Include="wtfpropertygridtooltipctrl.cpp" />
-    <ClCompile Include="wtfvslistbox.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Theremine.rc" />
+    <ResourceCompile Include="Source\Theremine.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\Theremine.rc2" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\Theremine.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\AnimListCtrl.cpp" />
+    <ClCompile Include="Source\DSStreamPlay.cpp" />
+    <ClCompile Include="Source\MeterCtl.cpp" />
+    <ClCompile Include="Source\Oscillator.cpp" />
+    <ClCompile Include="Source\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\PropertyGrid.cpp" />
+    <ClCompile Include="Source\SawtoothWave.cpp" />
+    <ClCompile Include="Source\SineWave.cpp" />
+    <ClCompile Include="Source\SquareWave.cpp" />
+    <ClCompile Include="Source\Theremine.cpp" />
+    <ClCompile Include="Source\TheremineDlg.cpp" />
+    <ClCompile Include="Source\TriangleWave.cpp" />
+    <ClCompile Include="Source\vec3.cpp" />
+    <ClCompile Include="Source\wtfcolorbar.cpp" />
+    <ClCompile Include="Source\wtfcolorbutton.cpp" />
+    <ClCompile Include="Source\wtfcolormenubutton.cpp" />
+    <ClCompile Include="Source\wtfcolorpopupmenu.cpp" />
+    <ClCompile Include="Source\wtfpropertygridctrl.cpp" />
+    <ClCompile Include="Source\wtfpropertygridtooltipctrl.cpp" />
+    <ClCompile Include="Source\wtfvslistbox.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\AnimListCtrl.h" />
+    <ClInclude Include="Source\DSStreamPlay.h" />
+    <ClInclude Include="Source\framework.h" />
+    <ClInclude Include="Source\MeterCtl.h" />
+    <ClInclude Include="Source\Oscillator.h" />
+    <ClInclude Include="Source\pch.h" />
+    <ClInclude Include="Source\PropertyGrid.h" />
+    <ClInclude Include="Source\resource.h" />
+    <ClInclude Include="Source\SawtoothWave.h" />
+    <ClInclude Include="Source\SineWave.h" />
+    <ClInclude Include="Source\SquareWave.h" />
+    <ClInclude Include="Source\targetver.h" />
+    <ClInclude Include="Source\Theremine.h" />
+    <ClInclude Include="Source\TheremineDlg.h" />
+    <ClInclude Include="Source\TriangleWave.h" />
+    <ClInclude Include="Source\vec3.h" />
+    <ClInclude Include="Source\wtfcolorbar.h" />
+    <ClInclude Include="Source\wtfcolorbutton.h" />
+    <ClInclude Include="Source\wtfcolormenubutton.h" />
+    <ClInclude Include="Source\wtfcolorpopupmenu.h" />
+    <ClInclude Include="Source\wtfpropertygridctrl.h" />
+    <ClInclude Include="Source\wtfpropertygridtooltipctrl.h" />
+    <ClInclude Include="Source\wtfvslistbox.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

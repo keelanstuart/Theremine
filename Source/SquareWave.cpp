@@ -3,15 +3,14 @@
 #include "SquareWave.h"
 
 
-CSquareWave::CSquareWave()
+CSquareWave::CSquareWave() : COscillator()
 {
-	m_fFreq = 1000.0;
 }
 
 
-void CSquareWave::Initialize(float Frequency, int SampleRate, float Amplitude)
+void CSquareWave::Initialize(float Frequency, int SampleRate, float Amplitude, float Distortion, float Reverb)
 {
-	COscillator::Initialize(Frequency, SampleRate, Amplitude);
+	COscillator::Initialize(Frequency, SampleRate, Amplitude, Distortion, Reverb);
 	m_iSampleValue = int(Amplitude * (double)SHRT_MAX);
 
 	SetFrequency(Frequency);
@@ -36,9 +35,14 @@ void CSquareWave::SetAmplitude(float Amplitude)
 
 int CSquareWave::Generate(int16_t *data, int Samples)
 {
+	double dDistVal;
 	while (Samples--)
 	{
 		dPos += dK;
+
+		dDistVal = (double)((int16_t)(rand()) / 4) * m_fDistortion;
+		dPos += dDistVal;
+
 		if (dPos <= (M_PI * 2.0))
 			*data++ = (int16_t)((float)m_iSampleValue);
 		else

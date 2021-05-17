@@ -3,17 +3,16 @@
 #include "SawtoothWave.h"
 
 
-CSawtoothWave::CSawtoothWave()
+CSawtoothWave::CSawtoothWave() : COscillator()
 {
-	m_fFreq = 1000.0;
 	dPos = 0;
 	dK = 0;
 }
 
 
-void CSawtoothWave::Initialize(float Frequency, int SampleRate, float Amplitude)
+void CSawtoothWave::Initialize(float Frequency, int SampleRate, float Amplitude, float Distortion, float Reverb)
 {
-	COscillator::Initialize(Frequency, SampleRate, Amplitude);
+	COscillator::Initialize(Frequency, SampleRate, Amplitude, Distortion, Reverb);
 
 	SetFrequency(Frequency);
 }
@@ -29,11 +28,14 @@ void CSawtoothWave::SetFrequency(float Frequency)
 
 int CSawtoothWave::Generate(int16_t *data, int Samples)
 {
-	double fSample;
+	double fSample, dDistVal;
 	while (Samples--)
 	{
 		dPos += dK;
 		fSample = dPos / (M_PI * 2.0);
+
+		dDistVal = (double)((int16_t)(rand()) / 4) * m_fDistortion;
+		fSample += dDistVal;
 
 		*data++ = (int16_t)(fSample * m_fAmplitude * SHRT_MAX);
 

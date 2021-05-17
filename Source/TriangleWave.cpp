@@ -3,17 +3,16 @@
 #include "TriangleWave.h"
 
 
-CTriangleWave::CTriangleWave()
+CTriangleWave::CTriangleWave() : COscillator()
 {
-	m_fFreq = 1000.0;
 	dPos = 0;
 	dK = 0;
 }
 
 
-void CTriangleWave::Initialize(float Frequency, int SampleRate, float Amplitude)
+void CTriangleWave::Initialize(float Frequency, int SampleRate, float Amplitude, float Distortion, float Reverb)
 {
-	COscillator::Initialize(Frequency, SampleRate, Amplitude);
+	COscillator::Initialize(Frequency, SampleRate, Amplitude, Distortion, Reverb);
 
 	SetFrequency(Frequency);
 }
@@ -29,14 +28,16 @@ void CTriangleWave::SetFrequency(float Frequency)
 
 int CTriangleWave::Generate(int16_t *data, int Samples)
 {
-	double fSample;
+	double fSample, dDistVal;
 	while (Samples--)
 	{
-
 		dPos += dK;
 		fSample = dPos / (M_PI * 2.0);
 		if (fSample > 1.0)
 			fSample = 2.0 - fSample;
+
+		dDistVal = (double)((int16_t)(rand()) / 4) * m_fDistortion;
+		fSample += dDistVal;
 
 		*data++ = (int16_t)(fSample * m_fAmplitude * (double)SHRT_MAX);
 

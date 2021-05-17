@@ -28,19 +28,36 @@ BOOL WINAPI CTheremineDlg::AudioCallback(PBYTE pBuffer, DWORD dwAmountRequested,
 	{
 		int nSamples = dwAmountRequested / sizeof(int16_t);
 
-		float freq_mul = theApp.m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_NPOS].Get();
+		CTheremineApp::TEffectInputMap::const_iterator cit;
+		
+		cit = theApp.m_EffectMap.find(CTheremineApp::EFFECT_TYPE::FREQUENCY);
+		if (cit != theApp.m_EffectMap.cend())
+		{
+			float freq_mul = theApp.m_ControlValue[cit->second].Get();
 
-		float steps = (float)(std::max<int64_t>(2, theApp.prop_freqsteps->AsInt() - 1));
+			float steps = (float)(std::max<int64_t>(2, theApp.prop_freqsteps->AsInt() - 1));
 
-		float freq_range = theApp.prop_freqmax->AsFloat() - theApp.prop_freqmin->AsFloat();
+			float freq_range = theApp.prop_freqmax->AsFloat() - theApp.prop_freqmin->AsFloat();
 
-		float pos_steps = floor(freq_mul * steps);
+			float pos_steps = floor(freq_mul * steps);
 
-		float freq = (pos_steps * freq_range / steps) + theApp.prop_freqmin->AsFloat();
-		(*posc)->SetFrequency(freq);
+			float freq = (pos_steps * freq_range / steps) + theApp.prop_freqmin->AsFloat();
+			(*posc)->SetFrequency(freq);
+		}
 
-		float vol = theApp.m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_DDOWN].Get();
-		(*posc)->SetAmplitude(vol);
+		cit = theApp.m_EffectMap.find(CTheremineApp::EFFECT_TYPE::VOLUME);
+		if (cit != theApp.m_EffectMap.cend())
+		{
+			float vol = theApp.m_ControlValue[cit->second].Get();
+			(*posc)->SetAmplitude(vol);
+		}
+
+		cit = theApp.m_EffectMap.find(CTheremineApp::EFFECT_TYPE::DISTORTION);
+		if (cit != theApp.m_EffectMap.cend())
+		{
+			float dis = theApp.m_ControlValue[cit->second].Get();
+			(*posc)->SetDistortion(dis);
+		}
 
 		(*posc)->Generate((int16_t *)pBuffer, nSamples);
 
@@ -107,23 +124,6 @@ BOOL CTheremineDlg::OnInitDialog()
  	ScreenToClient(rpl);
 	m_PropList.AdjustLayout();
 
-#if 0
-	int m = rc.right - rpl.right;
-	CRect rb(m, m, rpl.left - m, rpl.bottom);
-
-	m /= 2;
-	CRect rvb(rb);
-	rvb.right = (rb.Width() / 2) + m;
-	m_VolBar.Create(WS_CHILD | WS_VISIBLE, rvb, this, IDC_VOLBAR);
-	m_VolBar.SetLimits(0, 100);
-
-	CRect rfb(rb);
-	rfb.left = rvb.right + m + m;
-	m_FreqBar.Create(WS_CHILD | WS_VISIBLE, rfb, this, IDC_FREQBAR);
-
-	m_pDynamicLayout->AddItem(m_VolBar.GetSafeHwnd(), CMFCDynamicLayout::MoveNone(), CMFCDynamicLayout::SizeVertical(100));
-	m_pDynamicLayout->AddItem(m_FreqBar.GetSafeHwnd(), CMFCDynamicLayout::MoveNone(), CMFCDynamicLayout::SizeVertical(100));
-#else
 	CRect rb(rpl.left, rpl.bottom + rpl.top, rpl.right, rc.bottom - rpl.top);
 	m_EffectList.Create(WS_CHILD | WS_VISIBLE, rb, this, IDC_EFFECTLIST);
 
@@ -134,12 +134,11 @@ BOOL CTheremineDlg::OnInitDialog()
 	m_EffectList.SetBkColor(RGB(40, 40, 40));
 
 	m_EffectList.InsertColumn(0, _T("Value"), LVCFMT_LEFT, 100);
-	m_EffectList.InsertColumn(1, _T("Modulator"), LVCFMT_LEFT, 100);
+	m_EffectList.InsertColumn(1, _T("Effect"), LVCFMT_LEFT, 100);
 	m_EffectList.InsertColumn(2, _T("Input"), LVCFMT_LEFT, 100);
 
-	m_EffectList.AddItem(CTheremineApp::MODULATOR_TYPE::FREQUENCY, CTheremineApp::INPUT_TYPE::R_PALM_NPOS);
-	m_EffectList.AddItem(CTheremineApp::MODULATOR_TYPE::VOLUME, CTheremineApp::INPUT_TYPE::R_PALM_DDOWN);
-#endif
+	for (CTheremineApp::TEffectInputMap::const_iterator it = theApp.m_EffectMap.cbegin(), last_it = theApp.m_EffectMap.cend(); it != last_it; it++)
+		m_EffectList.AddItem(it->first, it->second);
 
 	SetTimer('PING', 10, nullptr);
 
@@ -219,7 +218,6 @@ void CTheremineDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CTheremineDlg::OnOK()
 {
-//	CDialogEx::OnOK();
 }
 
 
@@ -231,14 +229,11 @@ void CTheremineDlg::OnCancel()
 
 BOOL CTheremineDlg::OnEraseBkgnd(CDC *pDC)
 {
-	return FALSE; //CDialogEx::OnEraseBkgnd(pDC);
+	return __super::OnEraseBkgnd(pDC);
 }
 
 
 void CTheremineDlg::OnSize(UINT nType, int cx, int cy)
 {
-	CDialogEx::OnSize(nType, cx, cy);
-
-	CRect r;
-	m_PropList.GetClientRect(r);
+	__super::OnSize(nType, cx, cy);
 }

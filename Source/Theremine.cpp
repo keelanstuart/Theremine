@@ -213,6 +213,8 @@ pool::IThreadPool::TASK_RETURN __cdecl PollLeapTask(void *param0, void *param1, 
 
 					float p = PalmNormDistance(phand);
 					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_NPOS].Set(p);
+
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_FIST_TIGHTNESS].Set(1.0f - phand->grab_strength);
 				}
 
 				phand = FindFirstHand(trkevt, eLeapHandType_Left);
@@ -223,6 +225,8 @@ pool::IThreadPool::TASK_RETURN __cdecl PollLeapTask(void *param0, void *param1, 
 
 					float p = PalmNormDistance(phand);
 					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_PALM_NPOS].Set(p);
+
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_FIST_TIGHTNESS].Set(1.0f - phand->grab_strength);
 				}
 			}
 
@@ -248,6 +252,7 @@ pool::IThreadPool::TASK_RETURN __cdecl PollLeapTask(void *param0, void *param1, 
 
 	return pool::IThreadPool::TASK_RETURN::TR_REQUEUE;
 }
+
 
 class CPropChangeListener : public props::IPropertyChangeListener
 {
@@ -286,7 +291,7 @@ public:
 				}
 
 				if (pposc && *pposc)
-					(*pposc)->Initialize(theApp.m_curFrequency.Get(), theApp.m_iSampleRate, theApp.m_curVolume.Get());
+					(*pposc)->Initialize(0.0f, theApp.m_iSampleRate, 0.0f);
 
 				theApp.m_pOscillator.Unlock();
 				break;
@@ -297,6 +302,38 @@ public:
 };
 
 CPropChangeListener pcl;
+
+
+const TCHAR *CTheremineApp::GetInputName(CTheremineApp::INPUT_TYPE it)
+{
+	switch (it)
+	{
+		case R_PALM_NPOS:		return _T("Right Hand Position");
+		case R_PALM_DDOWN:		return _T("Right Palm Normal");
+		case R_FIST_TIGHTNESS:	return _T("Right Fist Tightness");
+
+		case L_PALM_NPOS:		return _T("Left Hand Position");
+		case L_PALM_DDOWN:		return _T("Left Palm Normal");
+		case L_FIST_TIGHTNESS:	return _T("Left Fist Tightness");
+	};
+
+	return nullptr;
+}
+
+
+const TCHAR *CTheremineApp::GetEffectName(CTheremineApp::EFFECT_TYPE et)
+{
+	switch (et)
+	{
+		case FREQUENCY:			return _T("Frequency");
+		case VOLUME:			return _T("Volume");
+		case DISTORTION:		return _T("Distortion");
+		case REVERB:			return _T("Reverb");
+	}
+
+	return nullptr;
+}
+
 
 BOOL CTheremineApp::InitInstance()
 {
@@ -335,6 +372,10 @@ BOOL CTheremineApp::InitInstance()
 	// such as the name of your company or organization
 	SetRegistryKey(_T("Theremine"));
 
+	m_EffectMap.insert(TEffectInputMap::value_type(CTheremineApp::EFFECT_TYPE::FREQUENCY, CTheremineApp::INPUT_TYPE::R_PALM_NPOS));
+	m_EffectMap.insert(TEffectInputMap::value_type(CTheremineApp::EFFECT_TYPE::VOLUME, CTheremineApp::INPUT_TYPE::R_PALM_DDOWN));
+	m_EffectMap.insert(TEffectInputMap::value_type(CTheremineApp::EFFECT_TYPE::DISTORTION, CTheremineApp::INPUT_TYPE::L_PALM_DDOWN));
+
 	m_pProps = props::IPropertySet::CreatePropertySet();
 	if (!m_pProps)
 		return FALSE;
@@ -344,8 +385,8 @@ BOOL CTheremineApp::InitInstance()
 	prop_osctype = m_pProps->CreateProperty(_T("Oscillator Type"), 'OSCI');
 	if (prop_osctype)
 	{
-		prop_osctype->SetEnumStrings(_T("Square,Triangle,Sawtooth,Sine"));
-		prop_osctype->SetEnumVal(1);
+		prop_osctype->SetEnumStrings(_T("Sine,Square,Triangle,Sawtooth"));
+		prop_osctype->SetEnumVal(0);
 	}
 
 	prop_freqmin = m_pProps->CreateProperty(_T("Frequency (Min)"), 'MINF');

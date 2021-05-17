@@ -9,11 +9,14 @@ COscillator::COscillator()
 }
 
 
-void COscillator::Initialize(float Frequency, int SampleRate, float Amplitude) 
+void COscillator::Initialize(float Frequency, int SampleRate, float Amplitude, float Distortion, float Reverb) 
 {
 	m_fFreq = Frequency;
 	m_iSampleRate = SampleRate;
 	m_fAmplitude = Amplitude;
+	m_fDistortion = Distortion;
+	m_fReverb = Reverb;
+
 	return;
 }
 
@@ -27,6 +30,18 @@ void COscillator::SetFrequency(float Frequency)
 void COscillator::SetAmplitude(float Amplitude)
 {
 	m_fAmplitude = Amplitude;
+}
+
+
+void COscillator::SetDistortion(float Distortion)
+{
+	m_fDistortion = Distortion;
+}
+
+
+void COscillator::SetReverb(float Reverb)
+{
+	m_fReverb = Reverb;
 }
 
 
