@@ -374,7 +374,7 @@ BOOL CTheremineApp::InitInstance()
 
 	m_EffectMap.insert(TEffectInputMap::value_type(CTheremineApp::EFFECT_TYPE::FREQUENCY, CTheremineApp::INPUT_TYPE::R_PALM_NPOS));
 	m_EffectMap.insert(TEffectInputMap::value_type(CTheremineApp::EFFECT_TYPE::VOLUME, CTheremineApp::INPUT_TYPE::R_PALM_DDOWN));
-	m_EffectMap.insert(TEffectInputMap::value_type(CTheremineApp::EFFECT_TYPE::DISTORTION, CTheremineApp::INPUT_TYPE::L_PALM_DDOWN));
+	//m_EffectMap.insert(TEffectInputMap::value_type(CTheremineApp::EFFECT_TYPE::DISTORTION, CTheremineApp::INPUT_TYPE::L_PALM_DDOWN));
 
 	m_pProps = props::IPropertySet::CreatePropertySet();
 	if (!m_pProps)
