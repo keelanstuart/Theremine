@@ -56,7 +56,7 @@ CTheremineApp::~CTheremineApp()
 	{
 		delete *pposc;
 		*pposc = nullptr;
-		m_pOscillator.Lock();
+		m_pOscillator.Unlock();
 	}
 
 	if (m_pProps)

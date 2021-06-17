@@ -17,68 +17,50 @@
 #include "TriangleWave.h"
 #include "SawtoothWave.h"
 
-class CAutolock
-{
-public:
-	CAutolock(CRITICAL_SECTION *cs) : m_cs(cs)
-	{
-		EnterCriticalSection(m_cs);
-	}
-
-	virtual ~CAutolock()
-	{
-		LeaveCriticalSection(m_cs);
-	}
-
-protected:
-	CRITICAL_SECTION *m_cs;
-};
+#include <mutex>
 
 template <typename T> class CSyncVar
 {
 public:
 	CSyncVar()
 	{
-		InitializeCriticalSection(&m_cs);
 	}
 
 	CSyncVar(const T init_val)
 	{
 		m_Val = init_val;
-		InitializeCriticalSection(&m_cs);
 	}
 
 	virtual ~CSyncVar()
 	{
-		DeleteCriticalSection(&m_cs);
 	}
 
 	T &Get()
 	{
-		CAutolock lock(&m_cs);
+		std::lock_guard lock(m_mutex);
 		return m_Val;
 	}
 
 	void Set(T val)
 	{
-		CAutolock lock(&m_cs);
+		std::lock_guard lock(m_mutex);
 		m_Val = val;
 	}
 
 	T *Lock()
 	{
-		EnterCriticalSection(&m_cs);
+		m_mutex.lock();
 		return &m_Val;
 	}
 
 	void Unlock()
 	{
-		LeaveCriticalSection(&m_cs);
+		m_mutex.unlock();
 	}
 
 protected:
 	T m_Val;
-	CRITICAL_SECTION m_cs;
+	std::mutex m_mutex;
 };
 
 template <typename T> class CBoundedSyncVar : public CSyncVar<T>
@@ -98,25 +80,25 @@ public:
 
 	T &GetMin()
 	{
-		CAutolock lock(&m_cs);
+		std::lock_guard lock(m_mutex);
 		return m_MinVal;
 	}
 
 	void SetMin(T &minval)
 	{
-		CAutolock lock(&m_cs);
+		std::lock_guard lock(m_mutex);
 		m_MinVal = minval;
 	}
 
 	T &GetMax()
 	{
-		CAutolock lock(&m_cs);
+		std::lock_guard lock(m_mutex);
 		return m_MinVax;
 	}
 
 	void SetMax(T &maxval)
 	{
-		CAutolock lock(&m_cs);
+		std::lock_guard lock(m_mutex);
 		m_MaxVal = maxval;
 	}
 
