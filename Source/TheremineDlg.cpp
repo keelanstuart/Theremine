@@ -1,6 +1,8 @@
-
-// TheremineDlg.cpp : implementation file
+// **************************************************************
+// Theremine Source File
+// An optical theremin for the Leap Motion controller series of devices
 //
+// Copyright © 2020-2025, Keelan Stuart
 
 #include "pch.h"
 #include "framework.h"
@@ -16,75 +18,13 @@
 // CTheremineDlg dialog
 
 
-BOOL WINAPI CTheremineDlg::AudioCallback(PBYTE pBuffer, DWORD dwAmountRequested, DWORD &dwAmountRead, DWORD_PTR InstanceData)
-{
-	BOOL ret = FALSE;
-	dwAmountRead = 0;
-
-	CTheremineDlg *_this = (CTheremineDlg *)InstanceData;
-
-	COscillator **posc = theApp.m_pOscillator.Lock();
-	if (posc && *posc && theApp.m_Enabled.Get())
-	{
-		int nSamples = dwAmountRequested / sizeof(int16_t);
-
-		CTheremineApp::TEffectInputMap::const_iterator cit;
-		
-		cit = theApp.m_EffectMap.find(CTheremineApp::EFFECT_TYPE::FREQUENCY);
-		if (cit != theApp.m_EffectMap.cend())
-		{
-			float freq_mul = theApp.m_ControlValue[cit->second].Get();
-
-			float steps = (float)(std::max<int64_t>(2, theApp.prop_freqsteps->AsInt() - 1));
-
-			float freq_range = theApp.prop_freqmax->AsFloat() - theApp.prop_freqmin->AsFloat();
-
-			float pos_steps = floor(freq_mul * steps);
-
-			float freq = (pos_steps * freq_range / steps) + theApp.prop_freqmin->AsFloat();
-			(*posc)->SetFrequency(freq);
-		}
-
-		cit = theApp.m_EffectMap.find(CTheremineApp::EFFECT_TYPE::VOLUME);
-		if (cit != theApp.m_EffectMap.cend())
-		{
-			float vol = theApp.m_ControlValue[cit->second].Get();
-			(*posc)->SetAmplitude(vol);
-		}
-
-		cit = theApp.m_EffectMap.find(CTheremineApp::EFFECT_TYPE::DISTORTION);
-		if (cit != theApp.m_EffectMap.cend())
-		{
-			float dis = theApp.m_ControlValue[cit->second].Get();
-			(*posc)->SetDistortion(dis);
-		}
-
-		(*posc)->Generate((int16_t *)pBuffer, nSamples);
-
-		dwAmountRead = dwAmountRequested;
-		ret = TRUE;
-	}
-
-	theApp.m_pOscillator.Unlock();
-
-	return ret;
-}
-
 CTheremineDlg::CTheremineDlg(CWnd* pParent) : CDialogEx(IDD_THEREMINE_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-
-	m_pStream = nullptr;
 }
 
 CTheremineDlg::~CTheremineDlg()
 {
-	if (m_pStream)
-	{
-		m_pStream->StopBuffers();
-		delete m_pStream;
-		m_pStream = nullptr;
-	}
 }
 
 void CTheremineDlg::DoDataExchange(CDataExchange* pDX)
@@ -138,22 +78,11 @@ BOOL CTheremineDlg::OnInitDialog()
 	m_EffectList.InsertColumn(2, _T("Input"), LVCFMT_LEFT, 100);
 
 	for (CTheremineApp::TEffectInputMap::const_iterator it = theApp.m_EffectMap.cbegin(), last_it = theApp.m_EffectMap.cend(); it != last_it; it++)
+	{
 		m_EffectList.AddItem(it->first, it->second);
+	}
 
 	SetTimer('PING', 10, nullptr);
-
-	WAVEFORMATEX wfx;
-	wfx.cbSize = sizeof(WAVEFORMATEX);
-	wfx.wFormatTag = WAVE_FORMAT_PCM;
-	wfx.nChannels = 1;
-	wfx.nSamplesPerSec = theApp.m_iSampleRate;
-	wfx.wBitsPerSample = 16;
-	wfx.nBlockAlign = (wfx.wBitsPerSample / 8) * wfx.nChannels;
-	wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
-
-	m_pStream = new CDSStreamPlay(GetSafeHwnd(), &wfx, 50);
-	m_pStream->SetCallback(AudioCallback, (DWORD_PTR)this);
-	m_pStream->StartBuffers();
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }

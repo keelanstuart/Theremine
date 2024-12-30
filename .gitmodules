@@ -7,3 +7,6 @@
 [submodule "third-party/GenIO"]
 	path = third-party/GenIO
 	url = https://github.com/keelanstuart/GenIO
+[submodule "third-party/glm"]
+	path = third-party/glm
+	url = https://github.com/keelanstuart/glm

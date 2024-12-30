@@ -29,14 +29,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
@@ -44,14 +44,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
@@ -80,7 +80,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(LeapSDK_DIR)\include;$(SolutionDir)third-party\Pool\Include;$(SolutionDir)third-party\GenIO\Include;$(SolutionDir)third-party\PowerProps\Include</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)third-party\glm;$(LeapSDK_DIR)\include;$(SolutionDir)third-party\Pool\Include;$(SolutionDir)third-party\GenIO\Include;$(SolutionDir)third-party\PowerProps\Include</IncludePath>
     <LibraryPath>$(LeapSDK_DIR)\lib\x$(PlatformArchitecture);$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)$(SolutionDir)\lib</LibraryPath>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Configuration)$(PlatformArchitecture)\</IntDir>
@@ -88,7 +88,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(LeapSDK_DIR)\include;$(SolutionDir)third-party\Pool\Include;$(SolutionDir)third-party\GenIO\Include;$(SolutionDir)third-party\PowerProps\Include</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)third-party\glm;$(LeapSDK_DIR)\include;$(SolutionDir)third-party\Pool\Include;$(SolutionDir)third-party\GenIO\Include;$(SolutionDir)third-party\PowerProps\Include</IncludePath>
     <LibraryPath>$(LeapSDK_DIR)\lib\x$(PlatformArchitecture);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)\lib</LibraryPath>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Configuration)$(PlatformArchitecture)\</IntDir>
@@ -96,7 +96,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(LeapSDK_DIR)\include;$(SolutionDir)..\third-party\Pool\Include;$(SolutionDir)..\third-party\GenIO\Include;$(SolutionDir)..\third-party\PowerProps\Include</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)third-party\glm;$(LeapSDK_DIR)\include;$(SolutionDir)third-party\Pool\Include;$(SolutionDir)third-party\GenIO\Include;$(SolutionDir)third-party\PowerProps\Include</IncludePath>
     <LibraryPath>$(LeapSDK_DIR)\lib\x$(PlatformArchitecture);$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)$(SolutionDir)\lib</LibraryPath>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Configuration)$(PlatformArchitecture)\</IntDir>
@@ -104,7 +104,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(LeapSDK_DIR)\include;$(SolutionDir)third-party\Pool\Include;$(SolutionDir)third-party\GenIO\Include;$(SolutionDir)third-party\PowerProps\Include</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)third-party\glm;$(LeapSDK_DIR)\include;$(SolutionDir)third-party\Pool\Include;$(SolutionDir)third-party\GenIO\Include;$(SolutionDir)third-party\PowerProps\Include</IncludePath>
     <LibraryPath>$(LeapSDK_DIR)\lib\x$(PlatformArchitecture);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)$(SolutionDir)\lib</LibraryPath>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Configuration)$(PlatformArchitecture)\</IntDir>
@@ -255,9 +255,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\AnimListCtrl.cpp" />
-    <ClCompile Include="Source\DSStreamPlay.cpp" />
     <ClCompile Include="Source\MeterCtl.cpp" />
-    <ClCompile Include="Source\Oscillator.cpp" />
     <ClCompile Include="Source\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -265,13 +263,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Source\PropertyGrid.cpp" />
-    <ClCompile Include="Source\SawtoothWave.cpp" />
-    <ClCompile Include="Source\SineWave.cpp" />
-    <ClCompile Include="Source\SquareWave.cpp" />
     <ClCompile Include="Source\Theremine.cpp" />
     <ClCompile Include="Source\TheremineDlg.cpp" />
-    <ClCompile Include="Source\TriangleWave.cpp" />
-    <ClCompile Include="Source\vec3.cpp" />
     <ClCompile Include="Source\wtfcolorbar.cpp" />
     <ClCompile Include="Source\wtfcolorbutton.cpp" />
     <ClCompile Include="Source\wtfcolormenubutton.cpp" />
@@ -282,21 +275,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\AnimListCtrl.h" />
-    <ClInclude Include="Source\DSStreamPlay.h" />
     <ClInclude Include="Source\framework.h" />
     <ClInclude Include="Source\MeterCtl.h" />
-    <ClInclude Include="Source\Oscillator.h" />
+    <ClInclude Include="Source\miniaudio.h" />
     <ClInclude Include="Source\pch.h" />
     <ClInclude Include="Source\PropertyGrid.h" />
     <ClInclude Include="Source\resource.h" />
-    <ClInclude Include="Source\SawtoothWave.h" />
-    <ClInclude Include="Source\SineWave.h" />
-    <ClInclude Include="Source\SquareWave.h" />
     <ClInclude Include="Source\targetver.h" />
     <ClInclude Include="Source\Theremine.h" />
     <ClInclude Include="Source\TheremineDlg.h" />
-    <ClInclude Include="Source\TriangleWave.h" />
-    <ClInclude Include="Source\vec3.h" />
     <ClInclude Include="Source\wtfcolorbar.h" />
     <ClInclude Include="Source\wtfcolorbutton.h" />
     <ClInclude Include="Source\wtfcolormenubutton.h" />

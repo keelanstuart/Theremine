@@ -1,3 +1,9 @@
+// **************************************************************
+// Theremine Source File
+// An optical theremin for the Leap Motion controller series of devices
+//
+// Copyright © 2020-2025, Keelan Stuart
+
 // pch.cpp: source file corresponding to the pre-compiled header
 
 #include "pch.h"

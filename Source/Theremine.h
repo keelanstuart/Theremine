@@ -1,6 +1,8 @@
-
-// Theremine.h : main header file for the PROJECT_NAME application
+// **************************************************************
+// Theremine Source File
+// An optical theremin for the Leap Motion controller series of devices
 //
+// Copyright © 2020-2025, Keelan Stuart
 
 #pragma once
 
@@ -10,12 +12,7 @@
 
 #include "resource.h"		// main symbols
 
-#include "DSStreamPlay.h"
-#include "Oscillator.h"
-#include "SineWave.h"
-#include "SquareWave.h"
-#include "TriangleWave.h"
-#include "SawtoothWave.h"
+#include "miniaudio.h"
 
 #include <mutex>
 
@@ -144,38 +141,61 @@ public:
 	pool::IThreadPool *m_pLeapPool;
 
 	int m_iSampleRate;
-	CSyncVar<COscillator *> m_pOscillator;
 	CSyncVar<bool> m_Enabled;
 
 	props::IProperty *prop_osctype;
 	props::IProperty *prop_freqmin;
 	props::IProperty *prop_freqmax;
 	props::IProperty *prop_freqsteps;
+	props::IProperty *prop_intmode;
+	props::IProperty *prop_sustain;
 
-	typedef enum
+	using INPUT_TYPE = enum
 	{
-		R_PALM_NPOS = 0,	// Normalized Position of the Right Palm
-		R_PALM_DDOWN,		// Dot product of [DOWN] and the Right Palm normal
-		R_FIST_TIGHTNESS,	// Tightness of the right fist
+		R_PALM_NPOS = 0,			// Normalized Position of the Right Palm
+		R_PALM_DDOWN,				// Dot product of [DOWN] and the Right Palm normal
+		R_FIST_TIGHTNESS,			// Tightness of the right fist
+		R_PINCH_TIGHTNESS,			// Tightness of the right index finger and thumb
+		R_FINGER_THUMB_ANG,
+		R_FINGER_INDEX_ANG,
+		R_FINGER_MIDDLE_ANG,
+		R_FINGER_RING_ANG,
+		R_FINGER_PINKY_ANG,
 
-		L_PALM_NPOS,		// Normalized Position of the Left Palm
-		L_PALM_DDOWN,		// Dot product of [DOWN] and the Left Palm normal
-		L_FIST_TIGHTNESS,	// Tightness of the left fist
+		L_PALM_NPOS,				// Normalized Position of the Left Palm
+		L_PALM_DDOWN,				// Dot product of [DOWN] and the Left Palm normal
+		L_FIST_TIGHTNESS,			// Tightness of the left fist
+		L_PINCH_TIGHTNESS,			// Tightness of the left index finger and thumb
+		L_FINGER_THUMB_ANG,
+		L_FINGER_INDEX_ANG,
+		L_FINGER_MIDDLE_ANG,
+		L_FINGER_RING_ANG,
+		L_FINGER_PINKY_ANG,
 
 		NUM_INPUTS
-	} INPUT_TYPE;
+	};
+
+	using FINGER_INDEX = enum
+	{
+		THUMB = 0,
+		INDEX,
+		MIDDLE,
+		RING,
+		PINKY
+	};
 
 	const TCHAR *GetInputName(INPUT_TYPE it);
 
-	typedef enum
+	using EFFECT_TYPE = enum
 	{
 		FREQUENCY = 0,
 		VOLUME,
 		DISTORTION,
 		REVERB,
+		PITCH_BEND,
 
 		NUM_EFFECTS
-	} EFFECT_TYPE;
+	};
 
 	const TCHAR *GetEffectName(EFFECT_TYPE et);
 
@@ -185,8 +205,15 @@ public:
 	typedef std::map<EFFECT_TYPE, INPUT_TYPE> TEffectInputMap;
 	TEffectInputMap m_EffectMap;
 
+	void AssociateInputWithEffect(EFFECT_TYPE eff, INPUT_TYPE inp);
 
-	LARGE_INTEGER m_Frequency;
+	ma_device_config m_DeviceConfig;
+	ma_device m_Device;
+
+	ma_waveform_config m_WaveConfig;
+	ma_waveform m_Wave;
+
+	//ma_decoder m_Decoder;
 
 public:
 	CTheremineApp();
@@ -195,6 +222,7 @@ public:
 	virtual BOOL InitInstance();
 
 	DECLARE_MESSAGE_MAP()
+	virtual int ExitInstance();
 };
 
 extern CTheremineApp theApp;

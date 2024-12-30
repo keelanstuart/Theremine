@@ -1,3 +1,9 @@
+// **************************************************************
+// Theremine Source File
+// An optical theremin for the Leap Motion controller series of devices
+//
+// Copyright © 2020-2025, Keelan Stuart
+
 #pragma once
 
 #include "PropertyGrid.h"
@@ -30,8 +36,6 @@ protected:
 
 	CPropertyGrid m_PropList;
 	CAnimListCtrl m_EffectList;
-
-	CDSStreamPlay *m_pStream;
 
 	// Generated message map functions
 	virtual BOOL OnInitDialog();

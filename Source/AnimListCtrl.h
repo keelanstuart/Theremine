@@ -1,3 +1,9 @@
+// **************************************************************
+// Theremine Source File
+// An optical theremin for the Leap Motion controller series of devices
+//
+// Copyright © 2020-2025, Keelan Stuart
+
 #pragma once
 
 class CAnimListCtrl : public CListCtrl
@@ -23,6 +29,7 @@ public:
 	virtual void DrawItem(LPDRAWITEMSTRUCT pdi);
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnPaint();
+    afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 };
 
 

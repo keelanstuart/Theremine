@@ -1,5 +1,8 @@
-// MeterCtl.cpp : implementation file
+// **************************************************************
+// Theremine Source File
+// An optical theremin for the Leap Motion controller series of devices
 //
+// Copyright © 2020-2025, Keelan Stuart
 
 #include "pch.h"
 #include "Theremine.h"

@@ -1,5 +1,8 @@
-// Source\TrackTimeline.cpp : implementation file
+// **************************************************************
+// Theremine Source File
+// An optical theremin for the Leap Motion controller series of devices
 //
+// Copyright © 2020-2025, Keelan Stuart
 
 #include "pch.h"
 #include "Theremine.h"
@@ -34,46 +37,10 @@ BEGIN_MESSAGE_MAP(CAnimListCtrl, CListCtrl)
 	ON_WM_DRAWITEM()
 	ON_WM_ERASEBKGND()
 	ON_WM_PAINT()
+	ON_WM_LBUTTONDOWN()
 END_MESSAGE_MAP()
 
 
-void MyAppendMenuItem(HMENU menu, UINT32 type, const TCHAR *text = NULL, BOOL enabled = true, HMENU submenu = NULL, UINT id = -1, DWORD_PTR data = NULL);
-
-void MyAppendMenuItem(HMENU menu, UINT32 type, const TCHAR *text, BOOL enabled, HMENU submenu, UINT id, DWORD_PTR data)
-{
-	MENUITEMINFO mii;
-	memset(&mii, 0, sizeof(MENUITEMINFO));
-
-	mii.cbSize = sizeof(MENUITEMINFO);
-
-	mii.fMask = MIIM_TYPE | MIIM_ID | MIIM_DATA;
-
-	mii.wID = (id == -1) ? GetMenuItemCount(menu) : id;
-
-	mii.fType = type;
-
-	if ((type == MFT_STRING) || text)
-	{
-		mii.dwTypeData = (LPWSTR)text;
-		mii.cch = (UINT)_tcslen(text);
-	}
-
-	if (!enabled)
-	{
-		mii.fMask |= MIIM_STATE;
-		mii.fState = MFS_GRAYED;
-	}
-
-	if (submenu)
-	{
-		mii.hSubMenu = submenu;
-		mii.fMask |= MIIM_SUBMENU;
-	}
-
-	mii.dwItemData = data;
-
-	InsertMenuItem(menu, GetMenuItemCount(menu), true, &mii);
-}
 
 bool CAnimListCtrl::AddItem(CTheremineApp::EFFECT_TYPE effect_type, CTheremineApp::INPUT_TYPE input_type)
 {
@@ -98,7 +65,7 @@ void CAnimListCtrl::MeasureItem(LPMEASUREITEMSTRUCT pmi)
 
 BOOL CAnimListCtrl::PreCreateWindow(CREATESTRUCT& cs)
 {
-	cs.style |= LVS_OWNERDRAWFIXED | LVS_NOCOLUMNHEADER | LVS_REPORT;
+	cs.style |= LVS_OWNERDRAWFIXED | LVS_NOCOLUMNHEADER | LVS_REPORT | LVS_SINGLESEL;
 	//cs.dwExStyle |= LVS_EX_FULLROWSELECT | LVS_EX_TRACKSELECT;// | LVS_EX_ONECLICKACTIVATE;
 
 	return CListCtrl::PreCreateWindow(cs);
@@ -217,3 +184,68 @@ void CAnimListCtrl::OnPaint()
 	dc.BitBlt(0, 0, r.right, r.bottom, &(mdc.GetDC()), 0, 0, SRCCOPY);
 }
 
+
+void MyAppendMenuItem(HMENU menu, UINT32 type, const TCHAR *text = NULL, BOOL enabled = true, HMENU submenu = NULL, UINT id = -1, DWORD_PTR data = NULL);
+
+void CAnimListCtrl::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	CListCtrl::OnLButtonDown(nFlags, point);
+
+	POSITION p = GetFirstSelectedItemPosition();
+	int s = GetSelectionMark();
+
+	CRect r;
+	GetSubItemRect(s, 2, LVIR_BOUNDS, r);
+	if (r.PtInRect(point))
+	{
+		ClientToScreen(r);
+		HMENU hm = CreatePopupMenu();
+		for (int i = 0; i < CTheremineApp::INPUT_TYPE::NUM_INPUTS; i++)
+			MyAppendMenuItem(hm, MFT_STRING, theApp.GetInputName((CTheremineApp::INPUT_TYPE)i), TRUE, NULL, i + 1);
+		int ret = (int)TrackPopupMenuEx(hm, TPM_NONOTIFY | TPM_RETURNCMD | TPM_TOPALIGN | TPM_LEFTALIGN,
+								  r.left, r.top, GetSafeHwnd(), nullptr);
+		DestroyMenu(hm);
+
+		if (ret > 0)
+		{
+			theApp.AssociateInputWithEffect((CTheremineApp::EFFECT_TYPE)GetItemData(s), (CTheremineApp::INPUT_TYPE)(ret - 1));
+			SetItemText(s, 2, theApp.GetInputName((CTheremineApp::INPUT_TYPE)(ret - 1)));
+		}
+	}
+}
+
+void MyAppendMenuItem(HMENU menu, UINT32 type, const TCHAR *text, BOOL enabled, HMENU submenu, UINT id, DWORD_PTR data)
+{
+	MENUITEMINFO mii;
+	memset(&mii, 0, sizeof(MENUITEMINFO));
+
+	mii.cbSize = sizeof(MENUITEMINFO);
+
+	mii.fMask = MIIM_TYPE | MIIM_ID | MIIM_DATA;
+
+	mii.wID = (id == -1) ? GetMenuItemCount(menu) : id;
+
+	mii.fType = type;
+
+	if ((type == MFT_STRING) || text)
+	{
+		mii.dwTypeData = (LPWSTR)text;
+		mii.cch = (UINT)_tcslen(text);
+	}
+
+	if (!enabled)
+	{
+		mii.fMask |= MIIM_STATE;
+		mii.fState = MFS_GRAYED;
+	}
+
+	if (submenu)
+	{
+		mii.hSubMenu = submenu;
+		mii.fMask |= MIIM_SUBMENU;
+	}
+
+	mii.dwItemData = data;
+
+	InsertMenuItem(menu, GetMenuItemCount(menu), true, &mii);
+}

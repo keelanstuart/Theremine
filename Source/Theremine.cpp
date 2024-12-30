@@ -1,12 +1,27 @@
-
-// Theremine.cpp : Defines the class behaviors for the application.
+// **************************************************************
+// Theremine Source File
+// An optical theremin for the Leap Motion controller series of devices
 //
+// Copyright © 2020-2025, Keelan Stuart
 
 #include "pch.h"
 #include "framework.h"
 #include "Theremine.h"
 #include "TheremineDlg.h"
-#include "Vec3.h"
+
+#include <glm/glm.hpp>						// https://github.com/g-truc/glm				==> third-party/glm
+#include <glm/ext.hpp>						// https://github.com/g-truc/glm				==> third-party/glm
+#include <glm/gtx/matrix_decompose.hpp>		// https://github.com/g-truc/glm				==> third-party/glm
+#include <cmath>
+
+#define MA_NO_ENCODING
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+
+#define DEVICE_FORMAT			ma_format_f32
+#define DEVICE_CHANNELS			1
+#define DEVICE_SAMPLE_RATE		48000
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -14,6 +29,7 @@
 
 
 CTheremineApp theApp;
+static bool s_Exiting = false;
 
 BEGIN_MESSAGE_MAP(CTheremineApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
@@ -27,19 +43,15 @@ int operator < (const LEAP_DEVICE_REF &a, const LEAP_DEVICE_REF &b)
 // CTheremineApp construction
 
 CTheremineApp::CTheremineApp() : 
-	m_pOscillator(nullptr), m_Enabled(false)
+	m_Enabled(false)
 {
-	m_ControlValue[CTheremineApp::INPUT_TYPE::L_PALM_NPOS].Set(0.0f);
-	m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_NPOS].Set(0.0f);
-	m_ControlValue[CTheremineApp::INPUT_TYPE::L_PALM_DDOWN].Set(0.0f);
-	m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_DDOWN].Set(0.0f);
+	for (size_t i = 0; i < CTheremineApp::INPUT_TYPE::NUM_INPUTS; i++)
+		m_ControlValue[i].Set(0);
 
 	m_pProps = nullptr;
 	m_pLeapPool = nullptr;
 	m_LeapConn = nullptr;
 	m_iSampleRate = 44100;
-
-	QueryPerformanceFrequency(&m_Frequency);
 }
 
 CTheremineApp::~CTheremineApp()
@@ -49,14 +61,6 @@ CTheremineApp::~CTheremineApp()
 		m_pLeapPool->PurgeAllPendingTasks();
 		m_pLeapPool->Release();
 		m_pLeapPool = nullptr;
-	}
-
-	COscillator **pposc = m_pOscillator.Lock();
-	if (pposc && *pposc)
-	{
-		delete *pposc;
-		*pposc = nullptr;
-		m_pOscillator.Unlock();
 	}
 
 	if (m_pProps)
@@ -88,32 +92,51 @@ const LEAP_HAND *FindFirstHand(const LEAP_TRACKING_EVENT *evt, eLeapHandType ht)
 
 float PalmNormal(const LEAP_HAND *phand)
 {
-	static vec3 down(0.0f, -1.0f, 0.0f);
+	static glm::fvec3 down(0.0f, -1.0f, 0.0f);
 
 	if (!phand)
 		return 0.0f;
 
-	vec3 palmnorm(phand->palm.normal.x, phand->palm.normal.y, phand->palm.normal.z);
-	float d = palmnorm.dot(down);
+	glm::fvec3 palmnorm(phand->palm.normal.x, phand->palm.normal.y, phand->palm.normal.z);
+	float d = glm::dot(palmnorm, down);
 	d = std::min<float>(std::max<float>(0.0f, d), 1.0f);
 
 	return d;
 }
 
-float PalmNormDistance(const LEAP_HAND *phand)
+float PalmNormDistance(const LEAP_HAND *phand, bool height_only = false);
+
+float PalmNormDistance(const LEAP_HAND *phand, bool height_only)
 {
 	if (!phand)
 		return -1.0f;
 
-	float p = sqrtf(
-		(phand->palm.position.x * phand->palm.position.x) +
-		(phand->palm.position.y * phand->palm.position.y) +
-		(phand->palm.position.z * phand->palm.position.z));
+	glm::fvec3 pos = *(glm::fvec3 *)&(phand->palm.position);
+	if (height_only)
+	{
+		pos.x = 0;
+		pos.z = 0;
+	}
+
+	float p = sqrtf((pos.x * pos.x) + (pos.y * pos.y) +	(pos.z * pos.z));
 
 	p = std::min<float>(std::max<float>(LEAP_MINDIST, p), LEAP_MAXDIST) - LEAP_MINDIST;
 	p /= LEAP_DISTRANGE;
 
 	return p;
+}
+
+float FingerAngle(const LEAP_HAND *phand, CTheremineApp::FINGER_INDEX finger)
+{
+	if (!phand)
+		return -1.0f;
+
+	glm::fquat q, qi = glm::identity<glm::fquat>();
+
+	q = *(glm::fquat *)&(phand->digits[finger].proximal.rotation);
+	float d = 1.0f - std::min<float>(std::max<float>(0.0f, glm::dot(q, qi)), 1.0f);
+
+	return d;
 }
 
 pool::IThreadPool::TASK_RETURN __cdecl PollLeapTask(void *param0, void *param1, size_t task_number)
@@ -133,6 +156,13 @@ pool::IThreadPool::TASK_RETURN __cdecl PollLeapTask(void *param0, void *param1, 
 			{
 				LeapDestroyConnection(_this->m_LeapConn);
 				_this->m_LeapConn = nullptr;
+
+				// if the app is exiting, then don't requeue this task
+				if (s_Exiting)
+					return pool::IThreadPool::TASK_RETURN::TR_OK;
+
+				// wait before trying to re-initialize
+				::Sleep(2000);
 			}
 		}
 
@@ -141,10 +171,12 @@ pool::IThreadPool::TASK_RETURN __cdecl PollLeapTask(void *param0, void *param1, 
 
 	LEAP_CONNECTION_MESSAGE msg;
 
-	lr = LeapPollConnection(_this->m_LeapConn, 1000, &msg);
+	lr = LeapPollConnection(_this->m_LeapConn, 100, &msg);
 	if (LEAP_FAILED(lr))
 	{
-		Sleep(3000);
+		if (s_Exiting)
+			return pool::IThreadPool::TASK_RETURN::TR_OK;
+
 		return pool::IThreadPool::TASK_RETURN::TR_REQUEUE;
 	}
 
@@ -191,9 +223,13 @@ pool::IThreadPool::TASK_RETURN __cdecl PollLeapTask(void *param0, void *param1, 
 
 		case eLeapEventType_DeviceLost:
 			_this->m_LeapDev.clear();
+			for (size_t i = 0; i < CTheremineApp::INPUT_TYPE::NUM_INPUTS; i++)
+				_this->m_ControlValue[i].Set(0);
 			break;
 
 		case eLeapEventType_DeviceFailure:
+			for (size_t i = 0; i < CTheremineApp::INPUT_TYPE::NUM_INPUTS; i++)
+				_this->m_ControlValue[i].Set(0);
 			break;
 
 		case eLeapEventType_Tracking:
@@ -205,29 +241,68 @@ pool::IThreadPool::TASK_RETURN __cdecl PollLeapTask(void *param0, void *param1, 
 			{
 				const LEAP_HAND* phand = nullptr;
 
+				float d, p, f, g;
+
 				phand = FindFirstHand(trkevt, eLeapHandType_Right);
 				if (phand)
 				{
-					float d = PalmNormal(phand);
+					d = PalmNormal(phand);
 					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_DDOWN].Set(d);
 
-					float p = PalmNormDistance(phand);
+					p = PalmNormDistance(phand);
 					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_PALM_NPOS].Set(p);
 
-					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_FIST_TIGHTNESS].Set(1.0f - phand->grab_strength);
+					g = 1.0f - (phand->grab_strength * phand->grab_strength);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_FIST_TIGHTNESS].Set(g);
+
+					f = FingerAngle(phand, CTheremineApp::FINGER_INDEX::THUMB);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_FINGER_THUMB_ANG].Set(f);
+
+					f = FingerAngle(phand, CTheremineApp::FINGER_INDEX::INDEX);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_FINGER_INDEX_ANG].Set(f);
+
+					f = FingerAngle(phand, CTheremineApp::FINGER_INDEX::MIDDLE);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_FINGER_MIDDLE_ANG].Set(f);
+
+					f = FingerAngle(phand, CTheremineApp::FINGER_INDEX::RING);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_FINGER_RING_ANG].Set(f);
+
+					f = FingerAngle(phand, CTheremineApp::FINGER_INDEX::PINKY);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::R_FINGER_PINKY_ANG].Set(f);
 				}
 
 				phand = FindFirstHand(trkevt, eLeapHandType_Left);
 				if (phand)
 				{
-					float d = PalmNormal(phand);
+					d = PalmNormal(phand);
 					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_PALM_DDOWN].Set(d);
 
-					float p = PalmNormDistance(phand);
+					p = PalmNormDistance(phand);
 					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_PALM_NPOS].Set(p);
 
-					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_FIST_TIGHTNESS].Set(1.0f - phand->grab_strength);
+					g = 1.0f - (phand->grab_strength * phand->grab_strength);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_FIST_TIGHTNESS].Set(g);
+
+					f = FingerAngle(phand, CTheremineApp::FINGER_INDEX::THUMB);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_FINGER_THUMB_ANG].Set(f);
+
+					f = FingerAngle(phand, CTheremineApp::FINGER_INDEX::INDEX);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_FINGER_INDEX_ANG].Set(f);
+
+					f = FingerAngle(phand, CTheremineApp::FINGER_INDEX::MIDDLE);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_FINGER_MIDDLE_ANG].Set(f);
+
+					f = FingerAngle(phand, CTheremineApp::FINGER_INDEX::RING);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_FINGER_RING_ANG].Set(f);
+
+					f = FingerAngle(phand, CTheremineApp::FINGER_INDEX::PINKY);
+					_this->m_ControlValue[CTheremineApp::INPUT_TYPE::L_FINGER_PINKY_ANG].Set(f);
 				}
+			}
+			else
+			{
+				for (size_t i = 0; i < CTheremineApp::INPUT_TYPE::NUM_INPUTS; i++)
+					_this->m_ControlValue[i].Set(0);
 			}
 
 			_this->m_Enabled.Set(b);
@@ -266,34 +341,23 @@ public:
 		{
 			case 'OSCI':
 			{
-				COscillator **pposc = theApp.m_pOscillator.Lock();
-				if (pposc && pposc)
-				{
-					delete *pposc;
-					*pposc = nullptr;
-				}
-
 				if (!_tcsicmp(pprop->AsString(), _T("Sine")))
 				{
-					*pposc = new CSineWave();
+					ma_waveform_set_type(&theApp.m_Wave, ma_waveform_type_sine);
 				}
 				else if (!_tcsicmp(pprop->AsString(), _T("Square")))
 				{
-					*pposc = new CSquareWave();
+					ma_waveform_set_type(&theApp.m_Wave, ma_waveform_type_square);
 				}
 				else if (!_tcsicmp(pprop->AsString(), _T("Triangle")))
 				{
-					*pposc = new CTriangleWave();
+					ma_waveform_set_type(&theApp.m_Wave, ma_waveform_type_triangle);
 				}
 				else if (!_tcsicmp(pprop->AsString(), _T("Sawtooth")))
 				{
-					*pposc = new CSawtoothWave();
+					ma_waveform_set_type(&theApp.m_Wave, ma_waveform_type_sawtooth);
 				}
 
-				if (pposc && *pposc)
-					(*pposc)->Initialize(0.0f, theApp.m_iSampleRate, 0.0f);
-
-				theApp.m_pOscillator.Unlock();
 				break;
 			}
 		}
@@ -308,13 +372,25 @@ const TCHAR *CTheremineApp::GetInputName(CTheremineApp::INPUT_TYPE it)
 {
 	switch (it)
 	{
-		case R_PALM_NPOS:		return _T("Right Hand Position");
-		case R_PALM_DDOWN:		return _T("Right Palm Normal");
-		case R_FIST_TIGHTNESS:	return _T("Right Fist Tightness");
+		case R_PALM_NPOS:			return _T("Right Hand Position");
+		case R_PALM_DDOWN:			return _T("Right Palm Normal");
+		case R_FIST_TIGHTNESS:		return _T("Right Fist Tightness");
+		case R_PINCH_TIGHTNESS:		return _T("Right Pinch Tightness");
+		case R_FINGER_THUMB_ANG:	return _T("Right Thumb Angle");
+		case R_FINGER_INDEX_ANG:	return _T("Right Index Finger Angle");
+		case R_FINGER_MIDDLE_ANG:	return _T("Right Middle Finger Angle");
+		case R_FINGER_RING_ANG:		return _T("Right Ring Finger Angle");
+		case R_FINGER_PINKY_ANG:	return _T("Right Pinky Finger Angle");
 
-		case L_PALM_NPOS:		return _T("Left Hand Position");
-		case L_PALM_DDOWN:		return _T("Left Palm Normal");
-		case L_FIST_TIGHTNESS:	return _T("Left Fist Tightness");
+		case L_PALM_NPOS:			return _T("Left Hand Position");
+		case L_PALM_DDOWN:			return _T("Left Palm Normal");
+		case L_FIST_TIGHTNESS:		return _T("Left Fist Tightness");
+		case L_PINCH_TIGHTNESS:		return _T("Left Pinch Tightness");
+		case L_FINGER_THUMB_ANG:	return _T("Left Thumb Angle");
+		case L_FINGER_INDEX_ANG:	return _T("Left Index Finger Angle");
+		case L_FINGER_MIDDLE_ANG:	return _T("Left Middle Finger Angle");
+		case L_FINGER_RING_ANG:		return _T("Left Ring Finger Angle");
+		case L_FINGER_PINKY_ANG:	return _T("Left Pinky Finger Angle");
 	};
 
 	return nullptr;
@@ -329,11 +405,65 @@ const TCHAR *CTheremineApp::GetEffectName(CTheremineApp::EFFECT_TYPE et)
 		case VOLUME:			return _T("Volume");
 		case DISTORTION:		return _T("Distortion");
 		case REVERB:			return _T("Reverb");
+		case PITCH_BEND:		return _T("Pitch Bend");
 	}
 
 	return nullptr;
 }
 
+
+void WaveformDataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+{
+	ma_waveform *pwave;
+
+	CTheremineApp::TEffectInputMap::const_iterator it;
+
+	double frmin = theApp.prop_freqmin->AsFloat();
+	double frmax = theApp.prop_freqmax->AsFloat();
+	double frdiff = frmax - frmin;
+	double frsteps = theApp.prop_freqsteps->AsFloat();
+	double frstepsize = frdiff / frsteps;
+
+	it = theApp.m_EffectMap.find(CTheremineApp::EFFECT_TYPE::FREQUENCY);
+	double p = theApp.m_ControlValue[it->second].Get();
+
+	it = theApp.m_EffectMap.find(CTheremineApp::EFFECT_TYPE::VOLUME);
+
+	static float last_vol = 0.0f;
+	float vol = theApp.m_ControlValue[it->second].Get();
+	float sustain = theApp.prop_sustain->AsFloat();
+	float mix_vol = glm::mix<float>(vol, last_vol, sustain);
+	last_vol = mix_vol;
+
+	switch (theApp.prop_intmode->AsInt())
+	{
+		case 0:
+			// linear
+			break;
+
+		case 1:
+			// exponential
+			p = p * p;
+			break;
+	}
+
+	if (vol != 0)
+	{
+		double frmul = p * frsteps;
+		double fr = frstepsize * floor(frmul) + frmin;
+
+		it = theApp.m_EffectMap.find(CTheremineApp::EFFECT_TYPE::PITCH_BEND);
+		double b = theApp.m_ControlValue[it->second].Get();
+		fr += b * (frdiff / 12.0f);
+
+		ma_waveform_set_frequency(&theApp.m_Wave, fr);
+	}
+
+	ma_waveform_set_amplitude(&theApp.m_Wave, mix_vol);
+
+	pwave = (ma_waveform *)pDevice->pUserData;
+	ma_waveform_read_pcm_frames(pwave, pOutput, frameCount, NULL);
+}
 
 BOOL CTheremineApp::InitInstance()
 {
@@ -372,9 +502,12 @@ BOOL CTheremineApp::InitInstance()
 	// such as the name of your company or organization
 	SetRegistryKey(_T("Theremine"));
 
-	m_EffectMap.insert(TEffectInputMap::value_type(CTheremineApp::EFFECT_TYPE::FREQUENCY, CTheremineApp::INPUT_TYPE::R_PALM_NPOS));
-	m_EffectMap.insert(TEffectInputMap::value_type(CTheremineApp::EFFECT_TYPE::VOLUME, CTheremineApp::INPUT_TYPE::R_PALM_DDOWN));
-	//m_EffectMap.insert(TEffectInputMap::value_type(CTheremineApp::EFFECT_TYPE::DISTORTION, CTheremineApp::INPUT_TYPE::L_PALM_DDOWN));
+	AssociateInputWithEffect(CTheremineApp::EFFECT_TYPE::FREQUENCY, CTheremineApp::INPUT_TYPE::R_PALM_NPOS);
+//	AssociateInputWithEffect(CTheremineApp::EFFECT_TYPE::VOLUME, CTheremineApp::INPUT_TYPE::R_PALM_DDOWN);
+	AssociateInputWithEffect(CTheremineApp::EFFECT_TYPE::VOLUME, CTheremineApp::INPUT_TYPE::R_FIST_TIGHTNESS);
+//	AssociateInputWithEffect(CTheremineApp::EFFECT_TYPE::PITCH_BEND, CTheremineApp::INPUT_TYPE::R_FINGER_INDEX_ANG);
+	AssociateInputWithEffect(CTheremineApp::EFFECT_TYPE::PITCH_BEND, CTheremineApp::INPUT_TYPE::R_PALM_DDOWN);
+//	AssociateInputWithEffect(CTheremineApp::EFFECT_TYPE::DISTORTION, CTheremineApp::INPUT_TYPE::L_PALM_DDOWN);
 
 	m_pProps = props::IPropertySet::CreatePropertySet();
 	if (!m_pProps)
@@ -386,26 +519,56 @@ BOOL CTheremineApp::InitInstance()
 	if (prop_osctype)
 	{
 		prop_osctype->SetEnumStrings(_T("Sine,Square,Triangle,Sawtooth"));
-		prop_osctype->SetEnumVal(0);
+		prop_osctype->SetEnumVal(1);
 	}
 
 	prop_freqmin = m_pProps->CreateProperty(_T("Frequency (Min)"), 'MINF');
 	if (prop_freqmin)
-		prop_freqmin->SetFloat(50.0f);
+		prop_freqmin->SetFloat(440.0f);
 
 	prop_freqmax = m_pProps->CreateProperty(_T("Frequency (Max)"), 'MAXF');
 	if (prop_freqmax)
-		prop_freqmax->SetFloat(1500.0f);
+		prop_freqmax->SetFloat(880.0f);
 
 	prop_freqsteps = m_pProps->CreateProperty(_T("Frequency (Steps)"), 'STPF');
 	if (prop_freqsteps)
-		prop_freqsteps->SetInt(500);
+		prop_freqsteps->SetInt(120);
+
+	prop_intmode = m_pProps->CreateProperty(_T("Interpolation Mode"), 'INTM');
+	if (prop_intmode)
+	{
+		prop_intmode->SetEnumStrings(_T("Linear,Exponetial"));
+		prop_intmode->SetEnumVal(0);
+	}
+
+	prop_sustain = m_pProps->CreateProperty(_T("Sustain"), 'SSTN');
+	if (prop_sustain)
+		prop_sustain->SetFloat(0.9f);
 
 	m_pLeapPool = pool::IThreadPool::Create(1);
 	if (!m_pLeapPool)
 		return FALSE;
 
 	m_pLeapPool->RunTask(PollLeapTask, this);
+
+	m_DeviceConfig = ma_device_config_init(ma_device_type_playback);
+	m_DeviceConfig.playback.format   = DEVICE_FORMAT;
+	m_DeviceConfig.playback.channels = DEVICE_CHANNELS;
+	m_DeviceConfig.sampleRate        = DEVICE_SAMPLE_RATE;
+	m_DeviceConfig.dataCallback      = WaveformDataCallback;
+	m_DeviceConfig.pUserData         = &m_Wave;
+
+	if (ma_device_init(NULL, &m_DeviceConfig, &m_Device) != MA_SUCCESS) {
+		return FALSE;
+	}
+
+	m_WaveConfig = ma_waveform_config_init(m_Device.playback.format, m_Device.playback.channels, m_Device.sampleRate, ma_waveform_type_sine, 0.0, 50);
+	ma_waveform_init(&m_WaveConfig, &m_Wave);
+
+	if (ma_device_start(&m_Device) != MA_SUCCESS) {
+		ma_device_uninit(&m_Device);
+		return FALSE;
+	}
 
 	CTheremineDlg dlg;
 	m_pMainWnd = &dlg;
@@ -431,3 +594,17 @@ BOOL CTheremineApp::InitInstance()
 	return FALSE;
 }
 
+
+
+int CTheremineApp::ExitInstance()
+{
+	s_Exiting = true;
+	ma_device_uninit(&m_Device);
+
+	return CWinApp::ExitInstance();
+}
+
+void CTheremineApp::AssociateInputWithEffect(EFFECT_TYPE eff, INPUT_TYPE inp)
+{
+	m_EffectMap.insert_or_assign(eff, inp);
+}
